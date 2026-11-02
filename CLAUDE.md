@@ -2,7 +2,7 @@
 
 > Lu automatiquement par Claude Code à l'ouverture du dépôt. **Aucun mot de passe ici** : les secrets
 > sont décrits (où ils sont, comment ils s'appellent), jamais écrits.
-> Dernière mise à jour : 2 novembre 2026 · état : phases 0 à 2 faites (§9-§11), phase 3 compilée (§12), phase 4 écrite (§13) en attente de la CI, rien de publié.
+> Dernière mise à jour : 2 novembre 2026 · état : phases 0 à 2 faites (§9-§11), phase 3 compilée (§12), phase 4 compilée par la CI (§13), rien de publié.
 
 ## 1. En bref
 
