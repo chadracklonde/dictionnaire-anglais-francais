@@ -25,6 +25,13 @@ class UserStore extends ChangeNotifier {
   String get themeMode => _prefs.getString('themeMode') ?? 'system';
   double get textScale => _prefs.getDouble('textScale') ?? 1.0;
 
+  bool get tutorielVu => _prefs.getBool('tutorielVu') ?? false;
+
+  Future<void> setTutorielVu() async {
+    await _prefs.setBool('tutorielVu', true);
+    notifyListeners();
+  }
+
   /// Accent de la voix : 'us' ou 'uk'.
   String get accent => _prefs.getString('accent') ?? 'us';
 

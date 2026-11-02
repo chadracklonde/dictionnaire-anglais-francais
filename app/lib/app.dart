@@ -1,3 +1,5 @@
+import 'dart:ui' show PointerDeviceKind;
+
 import 'package:dicoenfr_engine/dicoenfr_engine.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,7 +13,7 @@ import 'screens/install_screen.dart';
 import 'theme.dart';
 
 /// Version affichée dans « À propos » (à garder alignée sur pubspec.yaml).
-const String appVersion = '0.1.0';
+const String appVersion = '0.2.0';
 
 /// Services partagés par tous les écrans.
 class AppServices {
@@ -118,7 +120,13 @@ class _DictionnaireAppState extends State<DictionnaireApp> {
           data: MediaQuery.of(context).copyWith(
             textScaler: TextScaler.linear(systeme * (user?.textScale ?? 1.0)),
           ),
-          child: child ?? const SizedBox.shrink(),
+          // Défilement à la souris et au doigt (Windows, macOS : listes de lettres, onglets).
+          child: ScrollConfiguration(
+            behavior: const MaterialScrollBehavior().copyWith(
+              dragDevices: PointerDeviceKind.values.toSet(),
+            ),
+            child: child ?? const SizedBox.shrink(),
+          ),
         );
       },
       home: services == null

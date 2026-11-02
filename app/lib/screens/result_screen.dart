@@ -5,6 +5,7 @@ import '../app.dart';
 import '../data/libelles.dart';
 import '../data/user_store.dart';
 import '../widgets/fiche_card.dart';
+import '../widgets/mise_en_page.dart';
 import 'entry_screen.dart';
 
 /// Résultat d'une recherche : un onglet anglais → français, un onglet français → anglais.
@@ -126,7 +127,7 @@ class _ListeAnglais extends StatelessWidget {
     }
     final theme = Theme.of(context);
     return ListView(
-      padding: const EdgeInsets.only(bottom: 24),
+      padding: padPage(context, v: 12),
       children: [
         if (r.regleAnglais != null) _Note(r.regleAnglais!),
         if (r.contraction != null)
@@ -168,7 +169,7 @@ class _ListeFrancais extends StatelessWidget {
     }
     final theme = Theme.of(context);
     return ListView(
-      padding: const EdgeInsets.only(bottom: 24),
+      padding: padPage(context, v: 12),
       children: [
         if (r.regleFrancais != null) _Note(r.regleFrancais!),
         for (final e in r.inverses)

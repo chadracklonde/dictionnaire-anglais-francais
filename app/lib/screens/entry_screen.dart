@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../app.dart';
 import '../data/user_store.dart';
 import '../widgets/fiche_card.dart';
+import '../widgets/mise_en_page.dart';
 
 /// Une seule fiche, ouverte à partir des favoris, de l'historique ou d'une liste.
 class EntryScreen extends StatefulWidget {
@@ -40,7 +41,7 @@ class _EntryScreenState extends State<EntryScreen> {
           if (snap.hasError) return Center(child: Text('Erreur : ${snap.error}'));
           if (!snap.hasData) return const Center(child: CircularProgressIndicator());
           return ListView(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: padPage(context, v: 8),
             children: [FicheCard(fiche: snap.data!)],
           );
         },

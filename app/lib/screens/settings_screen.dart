@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../app.dart';
+import '../widgets/mise_en_page.dart';
+import 'tutorial_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -12,7 +14,7 @@ class SettingsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Réglages')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: padPage(context),
         children: [
           Text('Thème', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
@@ -52,6 +54,13 @@ class SettingsScreen extends StatelessWidget {
             style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: 24),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.help_outline_rounded),
+            label: const Text('Revoir le tutoriel'),
+            onPressed: () => Navigator.of(context)
+                .push(MaterialPageRoute<void>(builder: (_) => const TutorialScreen())),
+          ),
+          const SizedBox(height: 8),
           OutlinedButton.icon(
             icon: const Icon(Icons.delete_outline_rounded),
             label: const Text('Vider l\'historique'),

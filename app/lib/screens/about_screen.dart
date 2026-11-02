@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../app.dart';
 import '../data/format.dart';
+import '../widgets/mise_en_page.dart';
 
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
@@ -30,7 +31,7 @@ class _AboutScreenState extends State<AboutScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('À propos')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: padPage(context),
         children: [
           Text('Dictionnaire Anglais-Français', style: theme.textTheme.headlineSmall),
           const SizedBox(height: 4),

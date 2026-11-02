@@ -2,6 +2,7 @@ import 'package:dicoenfr_engine/dicoenfr_engine.dart';
 import 'package:flutter/material.dart';
 
 import '../app.dart';
+import '../widgets/mise_en_page.dart';
 import 'result_screen.dart';
 
 /// Index alphabétique des mots anglais, par lettre, paginé par curseur.
@@ -103,6 +104,7 @@ class _IndexScreenState extends State<IndexScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : ListView.builder(
                     controller: _defilement,
+                    padding: padPage(context, v: 0),
                     itemCount: _entrees.length + (_fini ? 0 : 1),
                     itemBuilder: (context, i) {
                       if (i >= _entrees.length) {

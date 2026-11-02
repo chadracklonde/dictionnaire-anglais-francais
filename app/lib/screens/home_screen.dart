@@ -12,6 +12,8 @@ import 'favorites_screen.dart';
 import 'index_screen.dart';
 import 'result_screen.dart';
 import 'settings_screen.dart';
+import 'tutorial_screen.dart';
+import '../widgets/mise_en_page.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,6 +26,15 @@ class _HomeScreenState extends State<HomeScreen> {
   final _controleur = TextEditingController();
   Timer? _delai;
   List<String> _suggestions = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || AppScope.of(context).user.tutorielVu) return;
+      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const TutorialScreen()));
+    });
+  }
 
   @override
   void dispose() {
@@ -69,7 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: padPage(context),
         children: [
           TextField(
             controller: _controleur,
@@ -186,7 +197,11 @@ class _Raccourci extends StatelessWidget {
     final theme = Theme.of(context);
     return SizedBox(
       width: 150,
-      child: Card(
+      child: Semantics(
+        button: true,
+        label: texte,
+        excludeSemantics: true,
+        child: Card(
         margin: EdgeInsets.zero,
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
@@ -202,6 +217,7 @@ class _Raccourci extends StatelessWidget {
             ),
           ),
         ),
+      ),
       ),
     );
   }

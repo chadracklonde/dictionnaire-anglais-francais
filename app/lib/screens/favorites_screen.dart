@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../app.dart';
 import '../data/libelles.dart';
 import '../data/user_store.dart';
+import '../widgets/mise_en_page.dart';
 import 'entry_screen.dart';
 
 class FavoritesScreen extends StatelessWidget {
@@ -57,6 +58,7 @@ class _Liste extends StatelessWidget {
       );
     }
     return ListView(
+      padding: padPage(context, v: 8),
       children: [
         if (!favoris)
           Align(

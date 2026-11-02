@@ -63,7 +63,9 @@ class _FicheCardState extends State<FicheCard> {
             Row(
               children: [
                 Expanded(
-                  child: Text.rich(
+                  child: Semantics(
+                    header: true,
+                    child: Text.rich(
                     TextSpan(children: [
                       TextSpan(
                         text: fiche.mot.mot,
@@ -77,6 +79,7 @@ class _FicheCardState extends State<FicheCard> {
                         ),
                       ),
                     ]),
+                  ),
                   ),
                 ),
                 IconButton(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../app.dart';
+import '../widgets/mise_en_page.dart';
 
 /// Conjugaison anglaise : saisie d'un verbe (à l'infinitif ou conjugué), trois formes.
 class ConjugationScreen extends StatefulWidget {
@@ -106,7 +107,7 @@ class _ConjugationScreenState extends State<ConjugationScreen> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: padPage(context),
         children: [
           TextField(
             controller: _controleur,

@@ -2,7 +2,7 @@
 
 > Lu automatiquement par Claude Code à l'ouverture du dépôt. **Aucun mot de passe ici** : les secrets
 > sont décrits (où ils sont, comment ils s'appellent), jamais écrits.
-> Dernière mise à jour : 2 novembre 2026 · état : phases 0 à 2 faites (§9-§11), phase 3 écrite et compilée par la CI (§12), à essayer sur téléphone, rien de publié.
+> Dernière mise à jour : 2 novembre 2026 · état : phases 0 à 2 faites (§9-§11), phase 3 compilée (§12), phase 4 écrite (§13) en attente de la CI, rien de publié.
 
 ## 1. En bref
 
@@ -217,3 +217,13 @@ que la base contienne les renvois de la phase 2. Lire les annotations (`ANALYSE 
 - Couleurs dans `lib/theme.dart` ; `tools/test_contrastes.py` vérifie 4,5:1 sur les paires texte/fond.
 - **Logo provisoire** (livre « EN | FR ») : `app/assets/icon/`, à remplacer par un logo définitif.
 - Reste pour la phase 4 : tutoriel, accessibilité (lecteur d'écran), mise en page large (Windows/macOS), notes.
+
+## 13. Phase 4 — finitions (2 novembre 2026)
+
+Version 0.2.0+2. Tutoriel de bienvenue en 4 pages (`tutorial_screen.dart`, affiché une fois, `tutorielVu` dans
+`UserStore`, refaisable depuis les réglages) ; mise en page grand écran (`widgets/mise_en_page.dart` : `padPage`
+centre les listes à 840 px de large max) ; défilement à la souris (chips de l'index, onglets) ; accessibilité :
+titres sémantiques (fiche, tutoriel), raccourcis de l'accueil annoncés comme boutons, info-bulles sur les icônes,
+taille de texte réglable ; À propos avec mention CC BY-SA 4.0 (phase 3). Contrastes : `test_contrastes.py`.
+Non fait : notes personnelles, essai avec TalkBack, barre latérale de navigation sur grand écran.
+Validation : `build.yml` (une seule exécution), puis essai sur téléphone et sur Windows.
