@@ -1,0 +1,125 @@
+name: Phase 0 - Analyser les sources
+
+# Mesure les deux extractions du Wiktionnaire (anglais et français) et publie un
+# rapport : couverture des traductions, fusion, audio, formes verbales, poids.
+# Les résultats sont émis en annotations (RAPPORT-PHASE0, INVENTAIRE, ANALYSE-0)
+# et publiés dans la release « analyse-phase0 ».
+
+on:
+  workflow_dispatch:
+    inputs:
+      url_en:
+        description: "Extraction du Wiktionnaire anglais (JSONL, .gz accepté)"
+        required: true
+        default: "https://kaikki.org/dictionary/downloads/en/en-extract.jsonl.gz"
+      url_fr:
+        description: "Extraction du Wiktionnaire français (JSONL, .gz accepté)"
+        required: true
+        default: "https://kaikki.org/dictionary/downloads/fr/fr-extract.jsonl.gz"
+      limit:
+        description: "Lignes à lire par source (vide = tout). Essai rapide : 200000"
+        required: false
+        default: ""
+      probe_audio:
+        description: "Nombre de fichiers audio dont mesurer le poids (0 = aucun)"
+        required: true
+        default: "100"
+  push:
+    paths:
+      - "tools/**"
+      - ".github/workflows/analyse.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  analyse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      URL_EN: ${{ inputs.url_en || 'https://kaikki.org/dictionary/downloads/en/en-extract.jsonl.gz' }}
+      URL_FR: ${{ inputs.url_fr || 'https://kaikki.org/dictionary/downloads/fr/fr-extract.jsonl.gz' }}
+      LIMIT: ${{ inputs.limit }}
+      PROBE_AUDIO: ${{ inputs.probe_audio || '0' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Installer orjson
+        run: pip install orjson
+
+      - name: Tests Python
+        run: python3 -I -m unittest discover -s tools -p "test_*.py"
+
+      # Sur un simple push, seuls les tests tournent : l'analyse coûte du temps.
+      - name: Inventaire des sources
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          report=""
+          for url in "$URL_EN" "$URL_FR"; do
+            head=$(curl -sIL -m 60 "$url" || true)
+            code=$(printf '%s' "$head" | grep -i '^HTTP' | tail -1 | tr -d '\r')
+            size=$(printf '%s' "$head" | grep -i '^content-length' | tail -1 | tr -d '\r' | awk '{print $2}')
+            report="$report$url -> ${code:-aucune réponse}, ${size:-taille inconnue} octets%0A"
+            if ! printf '%s' "$code" | grep -q ' 200'; then
+              echo "::error title=ANALYSE-0 source introuvable::$url (${code:-aucune réponse}). Vérifier le nom du fichier sur https://kaikki.org/dictionary/rawdata.html"
+              missing=1
+            fi
+          done
+          echo "::notice title=INVENTAIRE::$report"
+          # Liste de contrôle : les fichiers JSONL que kaikki.org annonce.
+          links=$(curl -sL -m 60 https://kaikki.org/dictionary/rawdata.html \
+            | grep -oE 'href="[^"]*\.jsonl(\.gz)?"' | head -20 \
+            | sed 's/href=//' | tr -d '"' | paste -sd' ' || true)
+          [ -n "$links" ] && echo "::notice title=INVENTAIRE-LIENS::$links"
+          [ -z "${missing:-}" ]
+
+      - name: Analyser le Wiktionnaire anglais
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          mkdir -p resultats
+          args=(--edition en --out resultats)
+          [ -n "$LIMIT" ] && args+=(--limit "$LIMIT")
+          if [[ "$URL_EN" == *.gz ]]; then dec="gunzip -c"; else dec="cat"; fi
+          curl -sSL --fail --retry 5 --retry-delay 10 "$URL_EN" | $dec \
+            | python3 -I tools/analyse_wiktionnaire.py "${args[@]}"
+          st=("${PIPESTATUS[@]}")
+          if [ -z "$LIMIT" ] && { [ "${st[0]}" -ne 0 ] || [ "${st[1]}" -ne 0 ]; }; then
+            echo "::error title=ANALYSE-0 téléchargement incomplet::édition anglaise (curl=${st[0]}, décompression=${st[1]})"
+            exit 1
+          fi
+
+      - name: Analyser le Wiktionnaire français
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          args=(--edition fr --out resultats)
+          [ -n "$LIMIT" ] && args+=(--limit "$LIMIT")
+          if [[ "$URL_FR" == *.gz ]]; then dec="gunzip -c"; else dec="cat"; fi
+          curl -sSL --fail --retry 5 --retry-delay 10 "$URL_FR" | $dec \
+            | python3 -I tools/analyse_wiktionnaire.py "${args[@]}"
+          st=("${PIPESTATUS[@]}")
+          if [ -z "$LIMIT" ] && { [ "${st[0]}" -ne 0 ] || [ "${st[1]}" -ne 0 ]; }; then
+            echo "::error title=ANALYSE-0 téléchargement incomplet::édition française (curl=${st[0]}, décompression=${st[1]})"
+            exit 1
+          fi
+
+      - name: Rapport de synthèse
+        if: github.event_name == 'workflow_dispatch'
+        run: python3 -I tools/rapport_phase0.py --dir resultats --probe-audio "$PROBE_AUDIO"
+
+      - name: Publier les résultats dans la release analyse-phase0
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view analyse-phase0 >/dev/null 2>&1 \
+            || gh release create analyse-phase0 --title "Phase 0 - résultats d'analyse" \
+                 --notes "Rapport et paires de traductions produits par analyse.yml."
+          gh release upload analyse-phase0 --clobber \
+            resultats/rapport_phase0.md resultats/rapport_phase0.json \
+            resultats/en_stats.json resultats/fr_stats.json \
+            resultats/en_samples.json resultats/fr_samples.json \
+            resultats/en_pairs.tsv.gz resultats/fr_pairs.tsv.gz

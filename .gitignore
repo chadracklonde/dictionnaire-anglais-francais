@@ -1,0 +1,23 @@
+# Résultats d'analyse et bases générées : publiés en releases, jamais versionnés
+resultats/
+*.db
+*.db.gz
+*.jsonl
+*.jsonl.gz
+!tools/sample_*.jsonl
+
+# Python
+__pycache__/
+*.pyc
+
+# Flutter / Android (à compléter quand l'application sera créée)
+.dart_tool/
+build/
+*.iml
+.idea/
+
+# Secrets : ne jamais les déposer dans le dépôt
+*.jks
+*.keystore
+key.properties
+.env

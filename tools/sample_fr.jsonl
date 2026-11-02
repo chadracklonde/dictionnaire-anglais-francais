@@ -1,0 +1,6 @@
+{"word": "bonjour", "lang_code": "fr", "lang": "Français", "pos": "intj", "senses": [{"glosses": ["Salutation utilisée le jour."]}], "translations": [{"lang_code": "en", "lang": "Anglais", "word": "hello", "sense": "salutation"}, {"lang_code": "en", "lang": "Anglais", "word": "good morning"}, {"lang_code": "de", "lang": "Allemand", "word": "guten Tag"}]}
+{"word": "chat", "lang_code": "fr", "lang": "Français", "pos": "noun", "senses": [{"glosses": ["Mammifère félin domestique."]}], "translations": [{"lang_code": "en", "lang": "Anglais", "word": "cat", "sense": "animal"}]}
+{"word": "livre", "lang_code": "fr", "lang": "Français", "pos": "noun", "senses": [{"glosses": ["Ouvrage imprimé."]}]}
+{"word": "hello", "lang_code": "en", "lang": "Anglais", "pos": "intj", "senses": [{"glosses": ["Salutation en anglais."]}], "sounds": [{"audio": "En-us-hello.ogg", "tags": ["US"]}]}
+{"word": "run", "lang_code": "en", "lang": "Anglais", "pos": "verb", "senses": [{"glosses": ["Courir."]}], "forms": [{"form": "ran", "tags": ["past"]}, {"form": "run", "tags": ["participle", "past"]}]}
+{"word": "haus", "lang_code": "de", "lang": "Allemand", "pos": "noun", "senses": [{"glosses": ["maison"]}]}

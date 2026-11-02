@@ -1,0 +1,105 @@
+# Dictionnaire Anglais-Français — dossier de reprise du projet
+
+> Lu automatiquement par Claude Code à l'ouverture du dépôt. **Aucun mot de passe ici** : les secrets
+> sont décrits (où ils sont, comment ils s'appellent), jamais écrits.
+> Dernière mise à jour : 2 novembre 2026 · état : phase 0 (analyse des sources), rien de publié.
+
+## 1. En bref
+
+- **Nom** : Dictionnaire Anglais-Français — application à part entière, distincte de
+  « Dictionnaire et Conjugaison » (dépôt `chadracklonde/dictionnaire-francais`).
+- **Auteur / éditeur** : Chadrack Londe, Kindu (RDC).
+- **Dépôt** : `chadracklonde/dictionnaire-anglais-francais` (public), branche `main`.
+- **Identifiant Android (définitif, ne jamais changer)** : `com.chadracklonde.dicoenfr`
+- **But** : dictionnaire anglais ↔ français **100 % hors ligne**, grand public, issu du Wiktionnaire
+  (CC BY-SA 4.0). Plateformes visées : Android (Play Store), Windows, macOS.
+- **Technologie visée** : Flutter (Dart), base SQLite avec FTS5, compilation par GitHub Actions
+  (aucun SDK Flutter local). Les scripts de données sont en Python.
+- Cahier des charges complet (document éditable de Chadrack) : https://claude.ai/artifact/XhFm8df9jMQ2pHZi7yfFme
+
+## 2. Décisions prises
+
+1. **Application séparée**, avec son propre identifiant, sa fiche Play Store et sa signature.
+2. **Sources fusionnées** : Wiktionnaire anglais (entrées, sens, traductions vers le français, formes,
+   audio) + Wiktionnaire français (traductions inversées, enrichissement FR → EN).
+3. **Fiche** : équivalents français en avant, définition anglaise en appui et repliable.
+4. **Conjugaison anglaise gardée** : écran dédié ; formes simples du Wiktionnaire, temps composés
+   produits par règles (petit moteur à écrire et à tester).
+5. **Audio gardé** : enregistrements du Wiktionnaire (Wikimedia Commons) utilisables hors ligne,
+   synthèse vocale du téléphone en repli. Auteur et licence de chaque fichier à conserver et afficher.
+6. Hors ligne total : aucune connexion réseau dans l'application, aucun compte, aucune publicité,
+   aucune statistique. Toute fonction qui enverrait des données oblige à mettre à jour la politique de
+   confidentialité **avant** publication.
+7. **Une seule compilation CI par lot de modifications**.
+8. **Accessibilité** : tout texte respecte WCAG AA (contraste 4,5:1 minimum), thème clair et sombre.
+9. Interface en français, ton simple. Identité : même charte rouge/or/bleu, logo distinct.
+
+## 3. Disposition du dépôt (état actuel)
+
+```
+.github/workflows/analyse.yml   Phase 0 : inventaire, analyse, rapport, release « analyse-phase0 »
+tools/analyse_wiktionnaire.py   Lit un JSONL kaikki sur stdin, produit stats, paires, échantillons
+tools/rapport_phase0.py         Fusion des paires, poids de l'audio, rapport (annotation RAPPORT-PHASE0)
+tools/sample_en.jsonl, sample_fr.jsonl   Jeux d'essai
+tools/test_analyse.py           Tests (python3 -I -m unittest discover -s tools -p "test_*.py")
+CLAUDE.md, README.md, .gitignore
+```
+À venir selon le plan : `tools/schema.sql`, importeur, `engine/` (conjugaison anglaise en Dart pur),
+`app/` (Flutter), `build.yml`, `data.yml`, politique de confidentialité.
+
+## 4. Plan par phases
+
+| Phase | Contenu | Critère d'acceptation |
+| --- | --- | --- |
+| 0. Analyse | Mesurer en-extract et fr-extract : couverture, fusion, audio, poids | Chiffres validés par Chadrack |
+| 1. Données | Schéma, import, traductions inversées, fusion, rapport qualité, release de la base | Rapport sans anomalie bloquante |
+| 2. Moteur | Requêtes EN→FR / FR→EN, formes fléchies, suggestions, conjugaison anglaise par règles | Tests verts |
+| 3. Application | Accueil, recherche, fiche bilingue, conjugaison, index, favoris, réglages | `flutter analyze` propre, essai sur téléphone |
+| 4. Finitions | Tutoriel, À propos et licences, accessibilité, Windows et macOS | Contrastes ≥ 4,5:1, mention CC BY-SA |
+| 5. Publication | Fiche Play Store, confidentialité, signature, AAB | Google accepte l'AAB (sinon Play Asset Delivery) |
+
+## 5. Phase 0 — mode d'emploi
+
+1. Actions → « Phase 0 - Analyser les sources » → Run workflow. Essai rapide : `limit` = `200000`.
+2. Le workflow vérifie d'abord que les deux URL répondent (annotations `INVENTAIRE`, `INVENTAIRE-LIENS`,
+   `ANALYSE-0 source introuvable`). **Les noms exacts des fichiers kaikki.org n'ont pas été vérifiés
+   depuis une session Claude** : si l'inventaire signale une erreur, corriger les URL par défaut.
+3. Le rapport sort en annotation `RAPPORT-PHASE0` et dans la release `analyse-phase0`
+   (`rapport_phase0.md/json`, statistiques, échantillons, paires de traductions).
+4. Lire le rapport, décider des seuils de qualité, finaliser le schéma (phase 1).
+
+À mesurer et décider ensuite : couverture des traductions par sens, mots anglais gagnés par la fusion,
+part des mots avec audio (US / UK), poids total de l'audio, formes verbales irrégulières disponibles,
+et si le Play Asset Delivery est nécessaire.
+
+## 6. Contraintes de l'environnement Claude (Claude Code sur le web)
+
+- Pas de SDK Flutter ni de `pub.dev` : **le Dart n'est jamais compilé localement**. Validation par la CI
+  (`flutter analyze` + build). Relire imports et types avant de pousser. Le Python, lui, se teste ici.
+- Pas d'accès à kaikki.org ni à Wikimedia Commons depuis la session (proxy, erreur 403) : tout
+  téléchargement de données passe par la CI. Ne pas contourner le blocage.
+- L'API GraphQL de GitHub est bloquée : lancer un workflow par l'API REST :
+  `gh api -X POST repos/chadracklonde/dictionnaire-anglais-francais/actions/workflows/analyse.yml/dispatches -f ref=main`
+- L'API des secrets et de GitHub Pages est bloquée : ces réglages se font à la main dans l'interface.
+- Les journaux de jobs ne sont pas téléchargeables : lire les **annotations**
+  (`gh api repos/chadracklonde/dictionnaire-anglais-francais/check-runs/<id>/annotations`).
+- Attendre la fin d'une compilation : interroger `actions/runs/<id>` jusqu'à `status=completed`,
+  puis `actions/runs/<id>/jobs`.
+
+## 7. Publication (à faire en phase 5)
+
+- Code de version dans `app/pubspec.yaml` : à augmenter à chaque publication (Google refuse un code déjà utilisé).
+- **Signature Android** : une clé propre à cette application reste à créer par Chadrack. Le fichier `.jks`
+  et son mot de passe ne vont **jamais** dans le dépôt ; sauvegarde en deux endroits. Secrets GitHub
+  d'Actions prévus : `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_PASSWORD`, `KEY_ALIAS`, à ajouter à la
+  main dans Settings → Secrets and variables → Actions.
+- La politique de confidentialité (même principe que le dictionnaire actuel : rien n'est collecté) sera
+  servie par un fichier `CONFIDENTIALITE.md` dont l'URL GitHub est donnée à Google Play.
+- Taille : le module principal doit rester sous 200 Mo ; l'audio rend le Play Asset Delivery probable.
+
+## 8. Modèle de message pour redémarrer
+
+> Je reprends mon application « Dictionnaire Anglais-Français » (dépôt chadracklonde/dictionnaire-anglais-francais).
+> Lis `CLAUDE.md` au complet. Je voudrais : [décrire la modification]. Regroupe les changements et ne
+> lance la CI qu'une seule fois à la fin. Vérifie les contrastes WCAG AA si tu touches aux couleurs.
+> Augmente le code de version dans `pubspec.yaml` si c'est pour une nouvelle publication.
