@@ -422,7 +422,7 @@ Conjugaison conjuguer(
     notes.add('« ${f.base} » est un verbe défectif : même forme à toutes les personnes, '
         'suivi de l\'infinitif sans « to ».');
     temps.add(TempsConjugue('Présent', lignes((i) => _avecAuxiliaire(i, p, f.base, '[verbe]'))));
-    if (modal!.isNotEmpty) {
+    if (modal.isNotEmpty) {
       temps.add(TempsConjugue(
           'Forme passée ou conditionnelle', lignes((i) => _avecAuxiliaire(i, p, modal, '[verbe]'))));
     }
