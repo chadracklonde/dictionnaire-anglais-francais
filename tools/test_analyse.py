@@ -108,6 +108,12 @@ class Rapport(unittest.TestCase):
             with gzip.open(os.path.join(d, "en_pairs.tsv.gz"), "rt", encoding="utf-8") as f:
                 self.assertEqual(len(f.read().splitlines()), 4)
 
+    def test_taille_totale_depuis_les_en_tetes(self):
+        self.assertEqual(r.parse_total({"Content-Range": "bytes 0-0/12345"}), 12345)
+        self.assertEqual(r.parse_total({"Content-Length": "987"}), 987)
+        self.assertIsNone(r.parse_total({"Content-Range": "bytes */*"}))
+        self.assertIsNone(r.parse_total({}))
+
     def test_echappement_annotation(self):
         self.assertEqual(r.gh_escape("a%b\nc"), "a%25b%0Ac")
 

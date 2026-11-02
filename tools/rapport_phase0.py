@@ -16,6 +16,8 @@ import os
 import random
 import statistics
 import sys
+import time
+import urllib.error
 import urllib.request
 
 USER_AGENT = ("dictionnaire-anglais-francais/0.1 "
@@ -70,23 +72,65 @@ def compare(pairs_en, pairs_fr):
     }
 
 
-def probe_audio(urls, count, seed=1):
-    """Mesure le poids de `count` fichiers audio pris au hasard (requêtes HEAD)."""
+def parse_total(headers):
+    """Taille totale d'un fichier d'après Content-Range ("bytes 0-0/12345") ou Content-Length."""
+    content_range = headers.get("Content-Range") or ""
+    if "/" in content_range:
+        total = content_range.rsplit("/", 1)[-1].strip()
+        if total.isdigit():
+            return int(total)
+    length = headers.get("Content-Length")
+    if length and length.isdigit():
+        return int(length)
+    return None
+
+
+def _fetch_size(url):
+    """Taille d'un fichier : HEAD, puis GET d'un seul octet si HEAD ne renseigne rien."""
+    for method, extra in (("HEAD", {}), ("GET", {"Range": "bytes=0-0"})):
+        req = urllib.request.Request(url, method=method,
+                                     headers=dict({"User-Agent": USER_AGENT}, **extra))
+        with urllib.request.urlopen(req, timeout=30) as r:
+            size = parse_total(r.headers)
+            if method == "GET":
+                r.read(1)
+        if size:
+            return size
+    return None
+
+
+def probe_audio(urls, count, seed=1, pause=0.5):
+    """Mesure le poids de `count` fichiers audio pris au hasard.
+
+    Pause entre deux requêtes et une reprise après 429/503 : Wikimedia limite le débit.
+    Renvoie (tailles, nombre d'échecs, causes d'échec).
+    """
     urls = list(urls)
     random.Random(seed).shuffle(urls)
-    sizes, failed = [], 0
+    sizes, failed, reasons = [], 0, {}
     for url in urls[:count]:
-        try:
-            req = urllib.request.Request(url, method="HEAD", headers={"User-Agent": USER_AGENT})
-            with urllib.request.urlopen(req, timeout=20) as r:
-                length = r.headers.get("Content-Length")
-            if length and length.isdigit():
-                sizes.append(int(length))
-            else:
-                failed += 1
-        except Exception:
+        size = None
+        for attempt in (1, 2):
+            try:
+                size = _fetch_size(url)
+                break
+            except urllib.error.HTTPError as err:
+                reason = "HTTP %d" % err.code
+                if err.code in (429, 503) and attempt == 1:
+                    time.sleep(5)
+                    continue
+                reasons[reason] = reasons.get(reason, 0) + 1
+                break
+            except Exception as err:  # réseau, délai dépassé, URL invalide
+                reason = type(err).__name__
+                reasons[reason] = reasons.get(reason, 0) + 1
+                break
+        if size:
+            sizes.append(size)
+        else:
             failed += 1
-    return sizes, failed
+        time.sleep(pause)
+    return sizes, failed, reasons
 
 
 def build_report(en, fr, cmp_, audio, samples_en, samples_fr):
@@ -150,14 +194,19 @@ def build_report(en, fr, cmp_, audio, samples_en, samples_fr):
     lines += ["", "## Poids de l'audio", ""]
     if audio.get("mesures"):
         lines += [
-            "- Fichiers mesurés : %d (échecs : %d)" % (audio["mesures"], audio["echecs"]),
+            "- Fichiers mesurés : %d (échecs : %d%s)" % (
+                audio["mesures"], audio["echecs"],
+                " — " + ", ".join("%s × %d" % kv for kv in audio.get("causes_echecs", {}).items())
+                if audio.get("causes_echecs") else ""),
             "- Taille moyenne : %.1f Ko ; médiane : %.1f Ko ; maximum : %.1f Ko"
             % (audio["moyenne_ko"], audio["mediane_ko"], audio["max_ko"]),
             "- Estimation pour %s fichiers distincts : environ %.0f Mo (extrapolation d'un échantillon)"
             % (n(audio["fichiers_distincts"]), audio["estimation_totale_mo"]),
         ]
     else:
-        lines.append("- Poids non mesuré (aucun échantillon ou réseau indisponible).")
+        lines.append("- Poids non mesuré (aucun échantillon ou réseau indisponible)%s." % (
+            " ; causes : " + ", ".join("%s × %d" % kv for kv in audio.get("causes_echecs", {}).items())
+            if audio.get("causes_echecs") else ""))
 
     for title, sample in (("Échantillon, édition anglaise", samples_en),
                           ("Échantillon, édition française", samples_fr)):
@@ -195,18 +244,18 @@ def main(argv=None):
     audio = {}
     urls = en.get("urls_audio_echantillon") or []
     if args.probe_audio and urls:
-        sizes, failed = probe_audio(urls, args.probe_audio)
+        sizes, failed, reasons = probe_audio(urls, args.probe_audio)
         if sizes:
             mean = statistics.mean(sizes)
             audio = {
-                "mesures": len(sizes), "echecs": failed,
+                "mesures": len(sizes), "echecs": failed, "causes_echecs": reasons,
                 "moyenne_ko": mean / 1024, "mediane_ko": statistics.median(sizes) / 1024,
                 "max_ko": max(sizes) / 1024,
                 "fichiers_distincts": en.get("fichiers_audio_distincts", 0),
                 "estimation_totale_mo": mean * en.get("fichiers_audio_distincts", 0) / 1048576,
             }
         else:
-            audio = {"mesures": 0, "echecs": failed}
+            audio = {"mesures": 0, "echecs": failed, "causes_echecs": reasons}
 
     md = build_report(en, fr, cmp_, audio, samples_en, samples_fr)
     with open(os.path.join(d, "rapport_phase0.md"), "w", encoding="utf-8") as f:
