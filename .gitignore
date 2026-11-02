@@ -21,3 +21,20 @@ build/
 *.keystore
 key.properties
 .env
+
+# Application Flutter : la base découpée est produite par la CI (tools/build_assets.py)
+app/assets/db/part_*
+app/assets/db/manifest.json
+app/.dart_tool/
+app/.flutter-plugins*
+app/.packages
+app/pubspec.lock
+app/android/
+app/windows/
+app/macos/
+app/ios/
+app/linux/
+app/web/
+app/.metadata
+app/analyse.txt
+app/icones.txt

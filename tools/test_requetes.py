@@ -52,7 +52,8 @@ class Requetes(unittest.TestCase):
             "requeteMotsParRecherche", "requeteLemmesDeForme", "requeteContraction", "requeteEquivalents",
             "requeteSens", "requeteDefinitionsFr", "requeteFormes", "requeteAudio",
             "requetePrononciations", "requeteAnglaisParFrancais", "requeteSuggestionsAnglais",
-            "requeteSuggestionsFrancais"}
+            "requeteSuggestionsFrancais",
+            "requeteIndexAnglais", "requeteChiffres", "requeteMeta"}
         self.assertEqual(set(self.sql), attendues)
         for nom, sql in self.sql.items():
             self.assertNotIn("$", sql, nom)
@@ -107,6 +108,20 @@ class Requetes(unittest.TestCase):
         self.assertIn("turkey", [r[0] for r in self.run_q("requeteSuggestionsAnglais", "tu", borne("tu"), 5)])
         self.assertEqual([r[0] for r in self.run_q("requeteSuggestionsFrancais", "ch", borne("ch"), 5)],
                          ["chat", "chien", "chienne"])
+
+    def test_index_chiffres_meta(self):
+        page = self.run_q("requeteIndexAnglais", "", 3)
+        self.assertEqual(len(page), 3)
+        cles = [r[1] for r in page]
+        self.assertEqual(cles, sorted(cles))
+        suite = self.run_q("requeteIndexAnglais", cles[-1], 3)
+        self.assertTrue(all(r[1] > cles[-1] for r in suite))
+        mots, traductions, verbes, audio = self.run_q("requeteChiffres")[0]
+        self.assertGreater(mots, 5)
+        self.assertGreater(traductions, 5)
+        self.assertGreater(verbes, 0)
+        self.assertGreater(audio, 3)
+        self.assertEqual(dict(self.run_q("requeteMeta"))["version_schema"], "1")
 
     def test_les_recherches_principales_utilisent_un_index(self):
         cas = [

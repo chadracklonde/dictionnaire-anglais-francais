@@ -123,4 +123,25 @@ void main() {
     expect(e.requetes.first, requeteSuggestionsAnglais);
     expect(e.requetes.last, requeteSuggestionsFrancais);
   });
+
+  test('index, chiffres et métadonnées', () async {
+    final e = ExecuteurFactice([
+      [
+        {'mot': 'apple', 'cle': 'apple'},
+        {'mot': 'apply', 'cle': 'apply'},
+      ],
+      [
+        {'mots': 10, 'traductions': 20, 'verbes': 3, 'audio': 4},
+      ],
+      [
+        {'cle': 'version_schema', 'valeur': '1'},
+      ],
+    ]);
+    final source = SourceSql(e);
+    final index = await source.indexAnglais('app', 2);
+    expect(index.map((x) => x.cle), ['apple', 'apply']);
+    expect(e.arguments.first, ['app', 2]);
+    expect((await source.chiffres())['traductions'], 20);
+    expect((await source.meta())['version_schema'], '1');
+  });
 }

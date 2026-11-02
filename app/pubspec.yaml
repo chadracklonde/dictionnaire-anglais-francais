@@ -1,0 +1,30 @@
+name: dicoenfr
+description: Dictionnaire Anglais-Français hors ligne (contenu du Wiktionnaire, CC BY-SA 4.0).
+publish_to: none
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  dicoenfr_engine:
+    path: ../engine
+  sqflite_common_ffi: ^2.3.3
+  sqlite3_flutter_libs: ^0.5.24
+  path: ^1.9.0
+  path_provider: ^2.1.3
+  shared_preferences: ^2.2.3
+  url_launcher: ^6.3.0
+  flutter_tts: ^4.2.0
+
+dev_dependencies:
+  flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/db/
+    - assets/icon/book.png

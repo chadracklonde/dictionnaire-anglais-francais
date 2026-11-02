@@ -2,7 +2,7 @@
 
 > Lu automatiquement par Claude Code à l'ouverture du dépôt. **Aucun mot de passe ici** : les secrets
 > sont décrits (où ils sont, comment ils s'appellent), jamais écrits.
-> Dernière mise à jour : 2 novembre 2026 · état : phases 0 et 1 faites (§9, §10), phase 2 écrite (§11) en attente de validation par la CI Dart, rien de publié.
+> Dernière mise à jour : 2 novembre 2026 · état : phases 0 à 2 faites (§9-§11), phase 3 écrite (§12) en attente de validation par la CI `build.yml`, rien de publié.
 
 ## 1. En bref
 
@@ -49,9 +49,12 @@ tools/schema.sql, construire_base.py, liste_frequence.py, data/contractions.tsv 
 tools/test_analyse.py, test_base.py, test_requetes.py   Tests (python3 -I -m unittest discover -s tools -p "test_*.py")
 engine/                         Phase 2 : moteur en Dart pur (lib/src : normalisation, requetes, source, source_sql, regles, moteur, conjugaison ; test/)
 .github/workflows/engine.yml    Phase 2 : dart pub get, dart analyze, dart test
+app/                            Phase 3 : application Flutter (lib/ theme, app, data/, screens/, widgets/ ; assets/icon ; icons_config/)
+.github/workflows/build.yml     Phase 3 : tests + APK/AAB + Windows + macOS (déclenchement manuel)
+tools/build_assets.py           Découpe la base en morceaux pour l'application (+ test_assets.py, test_contrastes.py)
 CLAUDE.md, README.md, .gitignore
 ```
-À venir selon le plan : `app/` (Flutter), `build.yml`, politique de confidentialité.
+À venir selon le plan : politique de confidentialité (`CONFIDENTIALITE.md`).
 
 ## 4. Plan par phases
 
@@ -194,3 +197,23 @@ possessifs (règle du moteur). **La base doit être reconstruite** (`data.yml`) 
 
 **Validation** : `engine.yml` (`dart analyze` + `dart test`) se déclenche à chaque push sous `engine/`. Le Dart
 n'est jamais compilé ici : lire les annotations de cette CI et corriger avant d'aller plus loin.
+
+## 12. Phase 3 — application Flutter (2 novembre 2026)
+
+**Écrite, pas encore validée** : `build.yml` (Actions → « Phase 3 - Compiler l'application » → Run workflow) fait
+tests Python + `dart analyze`/`dart test` du moteur, puis Android (APK + AAB, release `apk-dernier`), Windows, macOS.
+Il télécharge `dictionnaire-en-fr.db.gz` de la release `base-donnees` : **relancer `data.yml` avant**, pour
+que la base contienne les renvois de la phase 2. Lire les annotations (`ANALYSE …`) puis corriger.
+
+- `flutter create --project-name dicoenfr` est refait à chaque compilation (dossiers `android/`, `windows/`,
+  `macos/` non versionnés) ; le manifeste Android est patché (libellé, `<queries>` https + synthèse vocale).
+  Aucune permission Internet. Signature : secrets `KEYSTORE_*` (sinon clé de débogage, non publiable).
+- Base livrée en morceaux de 20 Mo (`assets/db/part_*`, produits par la CI, non versionnés) puis recopiée au
+  premier lancement (`DbInstaller`), ouverte en lecture seule par sqflite FFI ; `ExecuteurSqflite` la relie au moteur.
+- Écrans : accueil (recherche + suggestions + récents), résultat (onglets EN→FR / FR→EN), fiche (`FicheCard` :
+  équivalents d'abord, définitions anglaises repliables), conjugaison (3 polarités, copie), index (lettres,
+  pagination par curseur), favoris/récents, réglages (thème, taille, accent de la voix), à propos (CC BY-SA 4.0).
+- Prononciation : synthèse vocale du téléphone (en-US / en-GB). Les enregistrements Wiktionnaire viendront en phase 5.
+- Couleurs dans `lib/theme.dart` ; `tools/test_contrastes.py` vérifie 4,5:1 sur les paires texte/fond.
+- **Logo provisoire** (livre « EN | FR ») : `app/assets/icon/`, à remplacer par un logo définitif.
+- Reste pour la phase 4 : tutoriel, accessibilité (lecteur d'écran), mise en page large (Windows/macOS), notes.

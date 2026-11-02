@@ -6,6 +6,14 @@ import 'modeles.dart';
 import 'requetes.dart';
 import 'source.dart';
 
+/// Une entrée de l'index alphabétique : le mot affiché et sa clé de tri.
+class EntreeIndex {
+  const EntreeIndex(this.mot, this.cle);
+
+  final String mot;
+  final String cle;
+}
+
 abstract class ExecuteurSql {
   Future<List<Map<String, Object?>>> requete(String sql, [List<Object?> arguments = const []]);
 }
@@ -122,5 +130,29 @@ class SourceSql implements Source {
     final lignes =
         await _sql.requete(requeteSuggestionsFrancais, [prefixe, borneSuperieure(prefixe), limite]);
     return lignes.map((l) => _texte(l['fr'])).toList();
+  }
+
+  /// Page de l'index alphabétique : les [limite] mots qui suivent la clé [apres] ('' pour le début).
+  Future<List<EntreeIndex>> indexAnglais(String apres, int limite) async {
+    final lignes = await _sql.requete(requeteIndexAnglais, [apres, limite]);
+    return lignes.map((l) => EntreeIndex(_texte(l['mot']), _texte(l['cle']))).toList();
+  }
+
+  /// Nombre de mots, de traductions, de verbes et de fichiers audio.
+  Future<Map<String, int>> chiffres() async {
+    final lignes = await _sql.requete(requeteChiffres);
+    if (lignes.isEmpty) return const {};
+    final l = lignes.first;
+    return {
+      'mots': _entier(l['mots']),
+      'traductions': _entier(l['traductions']),
+      'verbes': _entier(l['verbes']),
+      'audio': _entier(l['audio']),
+    };
+  }
+
+  Future<Map<String, String>> meta() async {
+    final lignes = await _sql.requete(requeteMeta);
+    return {for (final l in lignes) _texte(l['cle']): _texte(l['valeur'])};
   }
 }

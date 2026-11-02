@@ -88,3 +88,26 @@ GROUP BY fr_recherche
 ORDER BY COUNT(*) DESC, fr_recherche
 LIMIT ?
 ''';
+
+/// Index alphabétique anglais, page suivante après [cle]. Paramètres : clé de recherche précédente, limite.
+const String requeteIndexAnglais = '''
+SELECT COALESCE(MIN(CASE WHEN mot = mot_norm THEN mot END), MIN(mot)) AS mot, mot_recherche AS cle
+FROM mots
+WHERE mot_recherche > ?
+GROUP BY mot_recherche
+ORDER BY mot_recherche
+LIMIT ?
+''';
+
+/// Chiffres de la base (écran « À propos »).
+const String requeteChiffres = '''
+SELECT (SELECT COUNT(*) FROM mots) AS mots,
+       (SELECT COUNT(*) FROM traductions) AS traductions,
+       (SELECT COUNT(*) FROM mots WHERE nature = 'verb') AS verbes,
+       (SELECT COUNT(*) FROM audio) AS audio
+''';
+
+/// Métadonnées de la base (date de construction, licence…).
+const String requeteMeta = '''
+SELECT cle, valeur FROM meta
+''';

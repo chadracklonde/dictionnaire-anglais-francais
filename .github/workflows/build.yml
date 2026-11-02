@@ -1,0 +1,213 @@
+name: Phase 3 - Compiler l'application
+
+# Déclenchement manuel uniquement (une seule compilation par lot de modifications).
+# Le Dart n'est jamais compilé en local : cette CI est la validation de l'application.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - uses: dart-lang/setup-dart@v1
+        with: { sdk: stable }
+      - name: Tests Python
+        run: |
+          pip install orjson wordfreq
+          python3 -I -m unittest discover -s tools -p "test_*.py"
+      - name: Moteur Dart
+        working-directory: engine
+        run: |
+          dart pub get
+          dart analyze
+          dart test
+
+  android:
+    needs: tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Base de données (release base-donnees)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/base
+          gh release download base-donnees -p dictionnaire-en-fr.db.gz -D /tmp/base
+          gunzip -f /tmp/base/dictionnaire-en-fr.db.gz
+          python3 tools/build_assets.py /tmp/base/dictionnaire-en-fr.db
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: subosito/flutter-action@v2
+        with: { channel: stable, cache: true }
+      - name: Préparer le projet
+        working-directory: app
+        run: |
+          flutter create --org com.chadracklonde --project-name dicoenfr --platforms=android .
+          rm -f test/widget_test.dart
+          python3 - <<'PY'
+          import re
+          p='android/app/src/main/AndroidManifest.xml'
+          s=open(p,encoding='utf-8').read()
+          intents='<intent><action android:name="android.intent.action.VIEW"/><data android:scheme="https"/></intent><intent><action android:name="android.intent.action.TTS_SERVICE"/></intent>'
+          s=re.sub(r'android:label="[^"]*"','android:label="Dictionnaire Anglais-Français"',s,count=1)
+          if '<queries>' in s:
+              s=s.replace('<queries>','<queries>'+intents,1)
+          else:
+              s=s.replace('<application','<queries>'+intents+'</queries>\n    <application',1)
+          open(p,'w',encoding='utf-8').write(s)
+          PY
+          grep -n "applicationId\|namespace" android/app/build.gradle* || true
+          flutter pub get
+          dart run flutter_launcher_icons -f icons_config/android.yaml
+      - name: Signature de l'application (clé permanente, si configurée)
+        working-directory: app
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::warning::Clé de signature absente : APK signé avec la clé de débogage (non publiable)."
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > android/app/upload-keystore.jks
+          {
+            echo "storePassword=$KEYSTORE_PASSWORD"
+            echo "keyPassword=$KEY_PASSWORD"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "storeFile=upload-keystore.jks"
+          } > android/key.properties
+          python3 - <<'PY'
+          import os
+          kts='android/app/build.gradle.kts'
+          grv='android/app/build.gradle'
+          if os.path.exists(kts):
+              s=open(kts,encoding='utf-8').read()
+              s='import java.util.Properties\n'+s
+              block=('android {\n    signingConfigs {\n        create("release") {\n'
+                     '            val p = Properties().apply { load(rootProject.file("key.properties").inputStream()) }\n'
+                     '            keyAlias = p["keyAlias"] as String\n'
+                     '            keyPassword = p["keyPassword"] as String\n'
+                     '            storeFile = file(p["storeFile"] as String)\n'
+                     '            storePassword = p["storePassword"] as String\n        }\n    }\n')
+              s=s.replace('android {\n',block,1)
+              s=s.replace('signingConfigs.getByName("debug")','signingConfigs.getByName("release")')
+              open(kts,'w',encoding='utf-8').write(s)
+          else:
+              s=open(grv,encoding='utf-8').read()
+              block=("def keystoreProperties = new Properties()\nkeystoreProperties.load(new FileInputStream(rootProject.file('key.properties')))\n"
+                     "android {\n    signingConfigs {\n        release {\n"
+                     "            keyAlias keystoreProperties['keyAlias']\n            keyPassword keystoreProperties['keyPassword']\n"
+                     "            storeFile file(keystoreProperties['storeFile'])\n            storePassword keystoreProperties['storePassword']\n        }\n    }\n")
+              s=s.replace('android {\n',block,1)
+              s=s.replace('signingConfigs.debug','signingConfigs.release')
+              open(grv,'w',encoding='utf-8').write(s)
+          PY
+          grep -n "signingConfig" android/app/build.gradle* || true
+      - name: Analyse
+        working-directory: app
+        run: |
+          flutter analyze --no-fatal-infos --no-fatal-warnings > analyse.txt 2>&1 || { echo "::error::ANALYSE $(grep -E '^ *error' analyse.txt | head -8 | sed 's/^ *//' | paste -sd'|' | cut -c1-1500)"; exit 1; }
+          echo "::notice::ANALYSE-OK $(grep -cE 'warning|info' analyse.txt || true) remarques non bloquantes"
+      - name: APK
+        working-directory: app
+        run: flutter build apk --release
+      - name: Bundle Play Store (.aab)
+        working-directory: app
+        run: |
+          flutter build appbundle --release
+          ls -l build/app/outputs/bundle/release/app-release.aab
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dictionnaire-anglais-francais-android
+          path: |
+            app/build/app/outputs/flutter-apk/app-release.apk
+            app/build/app/outputs/bundle/release/app-release.aab
+      - name: Publier l'APK en téléchargement direct
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cp app/build/app/outputs/flutter-apk/app-release.apk dictionnaire-anglais-francais.apk
+          cp app/build/app/outputs/bundle/release/app-release.aab dictionnaire-anglais-francais.aab
+          gh release view apk-dernier >/dev/null 2>&1 || gh release create apk-dernier \
+            --title "APK le plus récent" --prerelease \
+            --notes "Dernier APK Android compilé. Téléchargez directement le fichier .apk ci-dessous."
+          gh release upload apk-dernier dictionnaire-anglais-francais.apk dictionnaire-anglais-francais.aab --clobber
+
+  windows:
+    needs: tests
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Base de données (release base-donnees)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/base
+          gh release download base-donnees -p dictionnaire-en-fr.db.gz -D /tmp/base
+          gunzip -f /tmp/base/dictionnaire-en-fr.db.gz
+          python tools/build_assets.py /tmp/base/dictionnaire-en-fr.db
+      - uses: subosito/flutter-action@v2
+        with: { channel: stable, cache: true }
+      - name: Compiler
+        working-directory: app
+        shell: bash
+        run: |
+          flutter create --project-name dicoenfr --platforms=windows .
+          sed -i 's/L"dicoenfr"/L"Dictionnaire Anglais-Français"/' windows/runner/main.cpp
+          flutter pub get
+          dart run flutter_launcher_icons -f icons_config/windows.yaml
+          flutter build windows --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dictionnaire-anglais-francais-windows
+          path: app/build/windows/x64/runner/Release
+
+  macos:
+    needs: tests
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Base de données (release base-donnees)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/base
+          gh release download base-donnees -p dictionnaire-en-fr.db.gz -D /tmp/base
+          gunzip -f /tmp/base/dictionnaire-en-fr.db.gz
+          python3 tools/build_assets.py /tmp/base/dictionnaire-en-fr.db
+      - uses: subosito/flutter-action@v2
+        with: { channel: stable, cache: true }
+      - name: Préparer le projet
+        working-directory: app
+        run: |
+          flutter create --project-name dicoenfr --platforms=macos .
+          # accès réseau sortant (ouverture des liens de licence) dans le bac à sable macOS
+          for f in macos/Runner/DebugProfile.entitlements macos/Runner/Release.entitlements; do
+            /usr/libexec/PlistBuddy -c "Add :com.apple.security.network.client bool true" "$f" || true
+          done
+          flutter pub get
+          dart run flutter_launcher_icons -f icons_config/macos.yaml > icones.txt 2>&1 || { echo "::warning::Icône macOS non générée : $(tr '\n' ' ' < icones.txt | cut -c1-600)"; }
+      - name: Compiler
+        working-directory: app
+        run: flutter build macos --release
+      - name: Archiver
+        run: ditto -c -k --keepParent app/build/macos/Build/Products/Release/dicoenfr.app dictionnaire-anglais-francais-macos.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dictionnaire-anglais-francais-macos
+          path: dictionnaire-anglais-francais-macos.zip
