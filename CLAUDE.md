@@ -2,7 +2,7 @@
 
 > Lu automatiquement par Claude Code à l'ouverture du dépôt. **Aucun mot de passe ici** : les secrets
 > sont décrits (où ils sont, comment ils s'appellent), jamais écrits.
-> Dernière mise à jour : 2 novembre 2026 · état : phases 0 à 2 faites (§9-§11), phase 3 écrite (§12) en attente de validation par la CI `build.yml`, rien de publié.
+> Dernière mise à jour : 2 novembre 2026 · état : phases 0 à 2 faites (§9-§11), phase 3 écrite et compilée par la CI (§12), à essayer sur téléphone, rien de publié.
 
 ## 1. En bref
 
@@ -200,7 +200,7 @@ n'est jamais compilé ici : lire les annotations de cette CI et corriger avant d
 
 ## 12. Phase 3 — application Flutter (2 novembre 2026)
 
-**Écrite, pas encore validée** : `build.yml` (Actions → « Phase 3 - Compiler l'application » → Run workflow) fait
+**Compilée avec succès par la CI le 2 novembre 2026** (analyse sans remarque, APK + AAB + Windows + macOS ; base reconstruite avec les renvois de la phase 2). Essai sur téléphone à faire : `build.yml` (Actions → « Phase 3 - Compiler l'application » → Run workflow) fait
 tests Python + `dart analyze`/`dart test` du moteur, puis Android (APK + AAB, release `apk-dernier`), Windows, macOS.
 Il télécharge `dictionnaire-en-fr.db.gz` de la release `base-donnees` : **relancer `data.yml` avant**, pour
 que la base contienne les renvois de la phase 2. Lire les annotations (`ANALYSE …`) puis corriger.
