@@ -27,6 +27,8 @@
    produits par règles (petit moteur à écrire et à tester).
 5. **Audio gardé** : enregistrements du Wiktionnaire (Wikimedia Commons) utilisables hors ligne,
    synthèse vocale du téléphone en repli. Auteur et licence de chaque fichier à conserver et afficher.
+   Livraison par **Play Asset Delivery** (voir §7) : « hors ligne » signifie ici hors ligne après un
+   premier téléchargement facultatif du pack audio, fait par Google Play.
 6. Hors ligne total : aucune connexion réseau dans l'application, aucun compte, aucune publicité,
    aucune statistique. Toute fonction qui enverrait des données oblige à mettre à jour la politique de
    confidentialité **avant** publication.
@@ -101,7 +103,17 @@ et si le Play Asset Delivery est nécessaire.
   main dans Settings → Secrets and variables → Actions.
 - La politique de confidentialité (même principe que le dictionnaire actuel : rien n'est collecté) sera
   servie par un fichier `CONFIDENTIALITE.md` dont l'URL GitHub est donnée à Google Play.
-- Taille : le module principal doit rester sous 200 Mo ; l'audio rend le Play Asset Delivery probable.
+- Taille : le module principal doit rester sous 200 Mo. **Décidé : l'audio est livré par Play Asset Delivery** :
+  l'audio des mots les plus courants arrive avec l'application, le reste forme un « pack prononciation »
+  facultatif téléchargé une fois depuis Google Play (de préférence en Wi-Fi, avec barre de progression) ;
+  la synthèse vocale du téléphone sert de repli si le pack manque (l'utilisateur peut le supprimer, et il
+  peut être brièvement indisponible après une mise à jour). À fixer après la phase 0 : le découpage
+  (fréquence, accent US/UK) et les limites de taille de
+  https://support.google.com/googleplay/android-developer/answer/9859372#size_limits (non lues à ce jour).
+  À vérifier : si ce mode exige la permission Internet dans l'application (impact sur la politique de
+  confidentialité). Windows et macOS ne sont pas couverts par Play Asset Delivery : autre solution à prévoir.
+  Le code Flutter qui demande et suit ces téléchargements ne se compile pas ici : validation par la CI et par
+  des essais sur téléphone.
 
 ## 8. Modèle de message pour redémarrer
 
