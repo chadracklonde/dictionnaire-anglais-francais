@@ -1,0 +1,110 @@
+name: Phase 1 - Construire la base de données
+
+# Construit la base SQLite (dictionnaire-en-fr.db.gz) à partir des deux éditions du
+# Wiktionnaire, la publie dans la release « base-donnees » et émet le rapport de
+# qualité en annotation RAPPORT-BASE. L'édition anglaise est lue avant la française.
+
+on:
+  workflow_dispatch:
+    inputs:
+      url_en:
+        description: "Wiktionnaire anglais, toutes langues (JSONL, .gz accepté)"
+        required: true
+        default: "https://kaikki.org/dictionary/raw-wiktextract-data.jsonl.gz"
+      url_fr:
+        description: "Extraction du Wiktionnaire français (JSONL, .gz accepté)"
+        required: true
+        default: "https://kaikki.org/dictionary/downloads/fr/fr-extract.jsonl.gz"
+      limit:
+        description: "Lignes à lire par source (vide = tout). Essai rapide : 1000000"
+        required: false
+        default: ""
+      seuil_rang:
+        description: "Un mot sans équivalent ni définition française n'est gardé que si son rang de fréquence est inférieur"
+        required: true
+        default: "30000"
+      publier:
+        description: "Publier la base dans la release base-donnees (mettre non pour un essai)"
+        required: true
+        default: "oui"
+
+permissions:
+  contents: write
+
+jobs:
+  base:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      URL_EN: ${{ inputs.url_en }}
+      URL_FR: ${{ inputs.url_fr }}
+      LIMIT: ${{ inputs.limit }}
+      SEUIL_RANG: ${{ inputs.seuil_rang }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Installer orjson et wordfreq
+        run: pip install orjson wordfreq
+
+      - name: Tests Python
+        run: python3 -I -m unittest discover -s tools -p "test_*.py"
+
+      - name: Liste de fréquence
+        run: python3 -I tools/liste_frequence.py --out frequence.txt
+
+      - name: Lire le Wiktionnaire anglais
+        run: |
+          args=(--db base.db --edition en)
+          [ -n "$LIMIT" ] && args+=(--limit "$LIMIT")
+          if [[ "$URL_EN" == *.gz ]]; then dec="gunzip -c"; else dec="cat"; fi
+          curl -sSL --fail --retry 5 --retry-delay 10 "$URL_EN" | $dec \
+            | python3 -I tools/construire_base.py lire "${args[@]}"
+          st=("${PIPESTATUS[@]}")
+          if [ -z "$LIMIT" ] && { [ "${st[0]}" -ne 0 ] || [ "${st[1]}" -ne 0 ] || [ "${st[2]}" -ne 0 ]; }; then
+            echo "::error title=BASE téléchargement incomplet::édition anglaise (curl=${st[0]}, décompression=${st[1]}, import=${st[2]})"
+            exit 1
+          fi
+
+      - name: Lire le Wiktionnaire français
+        run: |
+          args=(--db base.db --edition fr)
+          [ -n "$LIMIT" ] && args+=(--limit "$LIMIT")
+          if [[ "$URL_FR" == *.gz ]]; then dec="gunzip -c"; else dec="cat"; fi
+          curl -sSL --fail --retry 5 --retry-delay 10 "$URL_FR" | $dec \
+            | python3 -I tools/construire_base.py lire "${args[@]}"
+          st=("${PIPESTATUS[@]}")
+          if [ -z "$LIMIT" ] && { [ "${st[0]}" -ne 0 ] || [ "${st[1]}" -ne 0 ] || [ "${st[2]}" -ne 0 ]; }; then
+            echo "::error title=BASE téléchargement incomplet::édition française (curl=${st[0]}, décompression=${st[1]}, import=${st[2]})"
+            exit 1
+          fi
+
+      - name: Finaliser (contractions, rangs, élagage, index)
+        run: python3 -I tools/construire_base.py finaliser --db base.db --frequence frequence.txt --seuil-rang "$SEUIL_RANG"
+
+      # Sans --strict : le rapport est toujours publié, l'étape suivante échoue s'il est bloquant.
+      - name: Rapport de qualité
+        run: python3 -I tools/construire_base.py rapport --db base.db --frequence frequence.txt --out resultats
+
+      - name: Compresser la base
+        run: |
+          cp base.db dictionnaire-en-fr.db
+          gzip -9 -f dictionnaire-en-fr.db
+          ls -l base.db dictionnaire-en-fr.db.gz
+
+      - name: Publier dans la release base-donnees
+        if: inputs.publier == 'oui'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view base-donnees >/dev/null 2>&1 \
+            || gh release create base-donnees --title "Base de données" \
+                 --notes "Base SQLite produite par data.yml (données du Wiktionnaire, CC BY-SA 4.0)."
+          gh release upload base-donnees --clobber \
+            dictionnaire-en-fr.db.gz resultats/rapport_base.md resultats/rapport_base.json
+
+      - name: Échouer si le rapport est bloquant
+        run: python3 -I tools/construire_base.py rapport --db base.db --frequence frequence.txt --strict > /dev/null

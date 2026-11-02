@@ -1,0 +1,16 @@
+{"word": "go", "lang_code": "en", "pos": "verb", "senses": [{"glosses": ["To move through space."], "tags": ["intransitive"], "examples": [{"text": "I go to school."}]}, {"glosses": ["To leave.", "To depart."]}], "forms": [{"form": "goes", "tags": ["third-person", "singular", "present"]}, {"form": "went", "tags": ["past"]}, {"form": "gone", "tags": ["participle", "past"]}, {"form": "no-table-tags", "tags": ["table-tags"]}, {"form": "go", "tags": ["infinitive"]}], "translations": [{"lang_code": "fr", "word": "aller", "sense": "to move"}, {"lang_code": "fr", "word": "partir", "sense": "to leave"}, {"lang_code": "es", "word": "ir"}], "sounds": [{"ipa": "/ɡəʊ/", "tags": ["UK"]}, {"audio": "En-us-go.ogg", "tags": ["US"]}, {"audio": "En-uk-go.ogg", "tags": ["Southern-England"]}, {"audio": "En-au-go.ogg", "tags": ["Australia"]}]}
+{"word": "go", "lang_code": "en", "pos": "noun", "senses": [{"glosses": ["An attempt."]}], "translations": [{"lang_code": "fr", "word": "essai", "tags": ["masculine"]}]}
+{"word": "went", "lang_code": "en", "pos": "verb", "senses": [{"glosses": ["simple past tense of go"], "form_of": [{"word": "go"}], "tags": ["form-of", "past"]}]}
+{"word": "gone", "lang_code": "en", "pos": "verb", "senses": [{"glosses": ["past participle of go"], "form_of": [{"word": "go"}]}]}
+{"word": "hello", "lang_code": "en", "pos": "intj", "senses": [{"glosses": ["A greeting."]}], "translations": [{"lang_code": "fr", "word": "bonjour"}, {"lang_code": "fr", "word": "salut", "sense": "informal"}], "sounds": [{"audio": "En-uk-hello.ogg", "tags": ["Received-Pronunciation"]}, {"audio": "En-us-hello.ogg", "tags": ["General-American"]}, {"audio": "LL-Q1860 (eng)-Someone-hello.wav"}]}
+{"word": "dog", "lang_code": "en", "pos": "noun", "senses": [{"glosses": ["A domesticated animal."]}], "translations": [{"code": "fr", "word": "chien", "tags": ["masculine"]}, {"code": "fr", "word": "chienne", "tags": ["feminine"]}]}
+{"word": "cat", "lang_code": "en", "pos": "noun", "senses": [{"glosses": ["A feline."]}]}
+{"word": "the", "lang_code": "en", "pos": "det", "senses": [{"glosses": ["Definite article."]}]}
+{"word": "ephemeral", "lang_code": "en", "pos": "adj", "senses": [{"glosses": ["Lasting a short time."]}]}
+{"word": "obscureword", "lang_code": "en", "pos": "noun", "senses": [{"glosses": ["Something nobody knows."]}]}
+{"word": "Turkey", "lang_code": "en", "pos": "name", "senses": [{"glosses": ["A country."]}], "translations": [{"lang_code": "fr", "word": "Turquie"}]}
+{"word": "turkey", "lang_code": "en", "pos": "noun", "senses": [{"glosses": ["A bird."]}], "translations": [{"lang_code": "fr", "word": "dinde"}]}
+{"word": "a", "lang_code": "en", "pos": "character", "senses": [{"glosses": ["The letter a."]}]}
+{"word": "casa", "lang_code": "es", "pos": "noun", "senses": [{"glosses": ["house"]}]}
+{"word": "vide", "lang_code": "en", "pos": "noun", "senses": []}
+{pas du json

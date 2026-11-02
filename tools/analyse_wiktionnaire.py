@@ -36,8 +36,11 @@ try:  # orjson est bien plus rapide ; le module standard suffit pour les tests
 except ImportError:  # pragma: no cover
     loads = json.loads
 
-US_TAGS = {"us", "general-american", "american", "general american"}
-UK_TAGS = {"uk", "received-pronunciation", "british", "rp"}
+US_TAGS = {"us", "general-american", "american", "general american", "californian",
+           "midwest", "new york city"}
+UK_TAGS = {"uk", "received-pronunciation", "received pronunciation", "rp", "british",
+           "southern-england", "southern england", "england", "london", "cockney",
+           "british english", "standard southern british"}
 AUDIO_URL_SAMPLE = 300  # URL d'audio gardées pour mesurer le poids réel
 SAMPLE_SIZE = 25
 

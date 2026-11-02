@@ -1,0 +1,12 @@
+{"word": "chat", "lang_code": "fr", "pos": "noun", "senses": [{"glosses": ["Mammifère félin domestique."]}], "translations": [{"lang_code": "en", "word": "cat", "sense": "animal"}]}
+{"word": "chien", "lang_code": "fr", "pos": "nom", "senses": [{"glosses": ["Mammifère domestique."]}], "translations": [{"lang_code": "en", "word": "Dog", "sense": "animal"}]}
+{"word": "bonjour", "lang_code": "fr", "pos": "intj", "senses": [{"glosses": ["Salutation."]}], "translations": [{"lang_code": "en", "word": "hello"}, {"lang_code": "en", "word": "good morning"}, {"lang_code": "de", "word": "guten Tag"}]}
+{"word": "courir", "lang_code": "fr", "pos": "verb", "senses": [{"glosses": ["Se déplacer vite."]}], "translations": [{"lang_code": "en", "word": "run"}]}
+{"word": "course", "lang_code": "fr", "pos": "noun", "senses": [{"glosses": ["Action de courir."]}], "translations": [{"lang_code": "en", "word": "run"}]}
+{"word": "livre", "lang_code": "fr", "pos": "noun", "senses": [{"glosses": ["Ouvrage imprimé."]}]}
+{"word": "go", "lang_code": "en", "pos": "verb", "senses": [{"glosses": ["Aller."]}], "sounds": [{"audio": "En-us-go.ogg", "tags": ["US"]}, {"audio": "En-us-go2.ogg"}]}
+{"word": "cat", "lang_code": "en", "pos": "noun", "senses": [{"glosses": ["Chat."]}]}
+{"word": "ephemeral", "lang_code": "en", "pos": "adj", "senses": [{"glosses": ["Qui dure peu de temps."]}]}
+{"word": "inconnu", "lang_code": "en", "pos": "noun", "senses": [{"glosses": ["Mot défini seulement en français."]}]}
+{"word": "geese", "lang_code": "en", "pos": "noun", "senses": [{"glosses": ["Pluriel de goose."], "form_of": [{"word": "goose"}]}]}
+{"word": "haus", "lang_code": "de", "pos": "noun", "senses": [{"glosses": ["maison"]}]}
