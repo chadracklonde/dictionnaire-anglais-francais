@@ -2,7 +2,7 @@
 
 > Lu automatiquement par Claude Code à l'ouverture du dépôt. **Aucun mot de passe ici** : les secrets
 > sont décrits (où ils sont, comment ils s'appellent), jamais écrits.
-> Dernière mise à jour : 2 novembre 2026 · état : phase 0 (analyse des sources), rien de publié.
+> Dernière mise à jour : 2 novembre 2026 · état : phase 0 terminée (résultats en §9), phase 1 à lancer, rien de publié.
 
 ## 1. En bref
 
@@ -42,6 +42,7 @@
 .github/workflows/analyse.yml   Phase 0 : inventaire, analyse, rapport, release « analyse-phase0 »
 tools/analyse_wiktionnaire.py   Lit un JSONL kaikki sur stdin, produit stats, paires, échantillons
 tools/rapport_phase0.py         Fusion des paires, poids de l'audio, rapport (annotation RAPPORT-PHASE0)
+tools/couverture_frequence.py   Couverture du vocabulaire courant via wordfreq (annotation COUVERTURE-FREQUENCE)
 tools/sample_en.jsonl, sample_fr.jsonl   Jeux d'essai
 tools/test_analyse.py           Tests (python3 -I -m unittest discover -s tools -p "test_*.py")
 CLAUDE.md, README.md, .gitignore
@@ -53,7 +54,7 @@ CLAUDE.md, README.md, .gitignore
 
 | Phase | Contenu | Critère d'acceptation |
 | --- | --- | --- |
-| 0. Analyse | Mesurer en-extract et fr-extract : couverture, fusion, audio, poids | Chiffres validés par Chadrack |
+| 0. Analyse | Mesurer raw-wiktextract-data et fr-extract : couverture, fusion, audio, poids | **Faite le 2 novembre 2026** (§9) ; chiffres à valider par Chadrack |
 | 1. Données | Schéma, import, traductions inversées, fusion, rapport qualité, release de la base | Rapport sans anomalie bloquante |
 | 2. Moteur | Requêtes EN→FR / FR→EN, formes fléchies, suggestions, conjugaison anglaise par règles | Tests verts |
 | 3. Application | Accueil, recherche, fiche bilingue, conjugaison, index, favoris, réglages | `flutter analyze` propre, essai sur téléphone |
@@ -121,3 +122,28 @@ et si le Play Asset Delivery est nécessaire.
 > Lis `CLAUDE.md` au complet. Je voudrais : [décrire la modification]. Regroupe les changements et ne
 > lance la CI qu'une seule fois à la fin. Vérifie les contrastes WCAG AA si tu touches aux couleurs.
 > Augmente le code de version dans `pubspec.yaml` si c'est pour une nouvelle publication.
+
+## 9. Résultats de la phase 0 (2 novembre 2026)
+
+Fichiers entiers ; détail dans la release `analyse-phase0` (rapport, statistiques, paires, entrées).
+
+- **Édition anglaise** : 1 499 161 entrées anglaises (≈ 694 000 formes fléchies) ; 71 686 mots avec traduction
+  française (128 993 traductions, toutes rattachées à un sens).
+- **Édition française** : 129 366 entrées françaises avec traduction anglaise (196 130 traductions, 25,7 % seulement
+  rattachées à un sens) ; **194 290 entrées anglaises définies en français**.
+- **Fusion** : 248 266 couples, 161 904 mots anglais et 159 407 mots français couverts ; l'édition française
+  apporte 90 218 mots anglais de plus que l'édition anglaise seule.
+- **Vocabulaire courant** (liste wordfreq, formes ramenées au mot de base) : équivalent français pour 98,6 % des
+  1 000 et des 5 000 premiers mots, 96,9 % des 10 000, 92,8 % des 20 000 (87,6 % avec l'édition anglaise seule).
+  Les manques courants : contractions (can't, didn't…), possessifs (world's…), noms propres → règles de
+  l'application + petite table écrite à la main. Non mesuré : couverture de tous les sens d'un mot polysémique.
+- **Audio** : 129 612 entrées, 102 627 fichiers distincts, ≈ 17 Ko chacun → **≈ 1,7 Go** (149 mesures).
+  Balises d'accent par enregistrement : US 58 584, Southern-England 45 322, Australia 22 917,
+  General-American 7 039, UK 5 419. **Le compteur « audio UK » du rapport est faux** (il ne reconnaît pas
+  Southern-England) : l'audio britannique est abondant. À corriger dans `US_TAGS` / `UK_TAGS` en phase 1.
+- **Verbes** : 223 010 entrées verbe ; formes (passé et participe) disponibles pour 59 026 : à croiser avec les
+  verbes de base avant de dimensionner le moteur de conjugaison.
+- Le téléchargement et l'analyse des deux fichiers complets prennent environ 7 minutes dans la CI.
+
+À décider avec Chadrack : un ou deux accents dans le pack audio ; gestion des contractions et possessifs ;
+seuils de qualité pour le rapport de la phase 1.
