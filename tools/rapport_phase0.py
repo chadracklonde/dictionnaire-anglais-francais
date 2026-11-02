@@ -99,7 +99,7 @@ def _fetch_size(url):
     return None
 
 
-def probe_audio(urls, count, seed=1, pause=0.5):
+def probe_audio(urls, count, seed=1, pause=1.2):
     """Mesure le poids de `count` fichiers audio pris au hasard.
 
     Pause entre deux requêtes et une reprise après 429/503 : Wikimedia limite le débit.
@@ -157,7 +157,8 @@ def build_report(en, fr, cmp_, audio, samples_en, samples_fr):
             % (n(en.get("verbes")), n(en.get("verbes_avec_formes")),
                n(en.get("verbes_passe_et_participe"))),
             "- Balises audio les plus fréquentes : %s" % ", ".join(
-                "%s (%s)" % (k, n(v)) for k, v in list(en.get("balises_audio", {}).items())[:8]),
+                "%s (%s)" % (k, n(v)) for k, v in sorted(
+                    en.get("balises_audio", {}).items(), key=lambda kv: -kv[1])[:8]),
         ]
     else:
         lines.append("- Aucun résultat : l'analyse de l'édition anglaise n'a pas abouti.")

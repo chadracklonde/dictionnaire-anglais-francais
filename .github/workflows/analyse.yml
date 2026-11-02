@@ -48,8 +48,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Installer orjson
-        run: pip install orjson
+      - name: Installer orjson et wordfreq
+        run: pip install orjson wordfreq
 
       - name: Tests Python
         run: python3 -I -m unittest discover -s tools -p "test_*.py"
@@ -114,6 +114,12 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         run: python3 -I tools/rapport_phase0.py --dir resultats --probe-audio "$PROBE_AUDIO"
 
+      # Mesure seulement : wordfreq n'est pas embarqué dans l'application.
+      - name: Couverture du vocabulaire courant
+        if: github.event_name == 'workflow_dispatch'
+        continue-on-error: true
+        run: python3 -I tools/couverture_frequence.py --dir resultats
+
       - name: Publier les résultats dans la release analyse-phase0
         if: github.event_name == 'workflow_dispatch'
         env:
@@ -122,8 +128,6 @@ jobs:
           gh release view analyse-phase0 >/dev/null 2>&1 \
             || gh release create analyse-phase0 --title "Phase 0 - résultats d'analyse" \
                  --notes "Rapport et paires de traductions produits par analyse.yml."
+          shopt -s nullglob
           gh release upload analyse-phase0 --clobber \
-            resultats/rapport_phase0.md resultats/rapport_phase0.json \
-            resultats/en_stats.json resultats/fr_stats.json \
-            resultats/en_samples.json resultats/fr_samples.json \
-            resultats/en_pairs.tsv.gz resultats/fr_pairs.tsv.gz
+            resultats/*.md resultats/*.json resultats/*.tsv.gz

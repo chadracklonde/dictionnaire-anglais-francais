@@ -8,6 +8,7 @@ import tempfile
 import unittest
 
 import analyse_wiktionnaire as a
+import couverture_frequence as cf
 import rapport_phase0 as r
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -116,6 +117,57 @@ class Rapport(unittest.TestCase):
 
     def test_echappement_annotation(self):
         self.assertEqual(r.gh_escape("a%b\nc"), "a%25b%0Ac")
+
+
+class Couverture(unittest.TestCase):
+    def _dossier(self, d):
+        for ed, name in (("en", "sample_en.jsonl"), ("fr", "sample_fr.jsonl")):
+            with gzip.open(os.path.join(d, "%s_entries.tsv.gz" % ed), "wt", encoding="utf-8") as out:
+                s, p, smp = a.analyse(lines(name), ed, entries_out=out)
+            a.write_outputs(d, ed, s, p, smp)
+
+    def test_ligne_d_entree_et_renvoi(self):
+        senses = [{"glosses": ["simple past tense of go"], "form_of": [{"word": "go"}]}]
+        ligne = a.entry_line("Went", "verb", senses, False, False)
+        self.assertEqual(ligne, "went\tverb\t1\tgo\t0\t1\t0\n")
+        self.assertEqual(a.form_lemma([{"glosses": ["x"]}]), (False, ""))
+
+    def test_categories_et_pourcentages(self):
+        with tempfile.TemporaryDirectory() as d:
+            self._dossier(d)
+            ctx = cf.Context(d)
+            self.assertEqual(ctx.category("go"), "traduction")
+            self.assertEqual(ctx.category("went"), "traduction")       # via le mot de base
+            self.assertEqual(ctx.category("cat"), "traduction")        # apporté par l'édition française
+            self.assertEqual(ctx.category("run"), "definition_fr")
+            self.assertEqual(ctx.category("ephemeral"), "entree_seule")
+            self.assertEqual(ctx.category("ran"), "absent")
+            words = ["go", "went", "hello", "cat", "run", "ran", "ephemeral", "zzzz"]
+            res = cf.evaluate(ctx, words)
+            e = res["seuils"]["8"]
+            self.assertEqual((e["traduction"], e["definition_fr"], e["entree_seule"], e["absent"]),
+                             (4, 1, 1, 2))
+            self.assertEqual(e["traduction_pct"], 50.0)
+            self.assertEqual(e["traduction_edition_anglaise_seule"], 3)  # go, went, hello
+            self.assertEqual(e["traduction_ou_definition_pct"], 62.5)
+            self.assertIn("ephemeral (entree_seule)", res["exemples_sans_equivalent"])
+            self.assertIn("## Mots très courants", cf.build_markdown(res))
+
+    def test_nettoyage_de_la_liste(self):
+        self.assertEqual(cf.clean_words(["The", "the", "don\u2019t", "3d", "e-mail", "ok"]),
+                         ["the", "don't", "ok"])
+
+    def test_cli_avec_liste_de_mots(self):
+        with tempfile.TemporaryDirectory() as d:
+            self._dossier(d)
+            liste = os.path.join(d, "mots.txt")
+            with open(liste, "w", encoding="utf-8") as f:
+                f.write("go\nhello\nephemeral\n")
+            with contextlib.redirect_stdout(io.StringIO()):
+                cf.main(["--dir", d, "--wordlist", liste])
+            with open(os.path.join(d, "couverture_frequence.json"), encoding="utf-8") as f:
+                res = json.load(f)
+            self.assertEqual(res["mots_dans_la_liste"], 3)
 
 
 if __name__ == "__main__":

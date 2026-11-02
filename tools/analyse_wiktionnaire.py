@@ -8,6 +8,8 @@ quelques échantillons. Écrit dans --out :
   <edition>_stats.json     chiffres de couverture
   <edition>_pairs.tsv.gz   paires "mot anglais <TAB> mot français"
   <edition>_samples.json   échantillons lisibles pour relecture
+  <edition>_entries.tsv.gz une ligne par entrée anglaise (mot, nature, forme?, mot de base,
+                           traduction?, définition?, audio?) pour mesurer la couverture
 
 Usage :
   curl -sSL URL | gunzip -c | python3 -I tools/analyse_wiktionnaire.py \
@@ -96,6 +98,26 @@ def first_gloss(entry):
     return None
 
 
+def form_lemma(senses):
+    """(est_une_forme, mot_de_base) d'après les sens `form_of` / `alt_of`."""
+    for sense in senses:
+        for key in ("form_of", "alt_of"):
+            for target in sense.get(key) or []:
+                word = target.get("word") if isinstance(target, dict) else target
+                if word:
+                    return True, str(word)
+    return False, ""
+
+
+def entry_line(word, pos, senses, has_translation, has_audio):
+    """Une ligne du fichier d'entrées : mot, nature, forme?, mot de base, traduction?, définition?, audio?"""
+    is_form, lemma = form_lemma(senses)
+    has_def = any(s.get("glosses") for s in senses)
+    cols = (norm(word), str(pos or "?"), "1" if is_form else "0", norm(lemma) if lemma else "",
+            "1" if has_translation else "0", "1" if has_def else "0", "1" if has_audio else "0")
+    return "\t".join(col.replace("\t", " ").replace("\n", " ") for col in cols) + "\n"
+
+
 def has_sense_label(tr):
     return bool(tr.get("sense") or tr.get("sense_index"))
 
@@ -109,8 +131,11 @@ def translations_to(entry, code):
             if (t.get("lang_code") or t.get("code")) == code and t.get("word")]
 
 
-def analyse(lines, edition, limit=None):
-    """Parcourt un itérable de lignes JSON. Renvoie (stats, paires, échantillons)."""
+def analyse(lines, edition, limit=None, entries_out=None):
+    """Parcourt un itérable de lignes JSON. Renvoie (stats, paires, échantillons).
+
+    entries_out : fichier texte ouvert en écriture ; reçoit une ligne par entrée anglaise.
+    """
     c = collections.Counter()
     pos_counter = collections.Counter()
     audio_tags = collections.Counter()
@@ -161,6 +186,10 @@ def analyse(lines, edition, limit=None):
                     pairs.add((norm(word), norm(t["word"])))
             _count_sounds(e, c, audio_tags, audio_files, audio_urls)
             _count_verb(e, pos, c)
+            if entries_out is not None:
+                entries_out.write(entry_line(
+                    word, pos, senses, bool(trs),
+                    any(audio_of(x) for x in e.get("sounds") or [])))
             if trs and (e.get("sounds") or []) and n_def:
                 samples.add({
                     "mot": word, "nature": pos, "definition": first_gloss(e),
@@ -191,6 +220,10 @@ def analyse(lines, edition, limit=None):
                 pos_counter[e.get("pos") or "?"] += 1
                 _count_sounds(e, c, audio_tags, audio_files, audio_urls)
                 _count_verb(e, e.get("pos"), c)
+                if entries_out is not None:
+                    entries_out.write(entry_line(
+                        word, e.get("pos"), e.get("senses") or [], False,
+                        any(audio_of(x) for x in e.get("sounds") or [])))
         else:
             raise ValueError("édition inconnue : %r" % edition)
 
@@ -263,7 +296,10 @@ def main(argv=None):
     ap.add_argument("--limit", type=int, default=None,
                     help="s'arrêter après N lignes (essai rapide)")
     args = ap.parse_args(argv)
-    stats, pairs, samples = analyse(sys.stdin.buffer, args.edition, args.limit)
+    os.makedirs(args.out, exist_ok=True)
+    with gzip.open(os.path.join(args.out, "%s_entries.tsv.gz" % args.edition),
+                   "wt", encoding="utf-8") as entries_out:
+        stats, pairs, samples = analyse(sys.stdin.buffer, args.edition, args.limit, entries_out)
     write_outputs(args.out, args.edition, stats, pairs, samples)
     print("édition %s : %d lignes, %d paires" % (
         args.edition, stats.get("lignes", 0), stats["paires_distinctes"]), file=sys.stderr)
