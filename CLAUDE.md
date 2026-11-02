@@ -2,7 +2,7 @@
 
 > Lu automatiquement par Claude Code à l'ouverture du dépôt. **Aucun mot de passe ici** : les secrets
 > sont décrits (où ils sont, comment ils s'appellent), jamais écrits.
-> Dernière mise à jour : 2 novembre 2026 · état : phase 0 terminée (résultats en §9), phase 1 à lancer, rien de publié.
+> Dernière mise à jour : 2 novembre 2026 · état : phases 0 et 1 faites (résultats en §9 et §10), phase 2 à lancer, rien de publié.
 
 ## 1. En bref
 
@@ -44,7 +44,9 @@ tools/analyse_wiktionnaire.py   Lit un JSONL kaikki sur stdin, produit stats, pa
 tools/rapport_phase0.py         Fusion des paires, poids de l'audio, rapport (annotation RAPPORT-PHASE0)
 tools/couverture_frequence.py   Couverture du vocabulaire courant via wordfreq (annotation COUVERTURE-FREQUENCE)
 tools/sample_en.jsonl, sample_fr.jsonl   Jeux d'essai
-tools/test_analyse.py           Tests (python3 -I -m unittest discover -s tools -p "test_*.py")
+tools/schema.sql, construire_base.py, liste_frequence.py, data/contractions.tsv   Phase 1 : base SQLite
+.github/workflows/data.yml      Phase 1 : construit et publie la base (release « base-donnees »)
+tools/test_analyse.py, test_base.py   Tests (python3 -I -m unittest discover -s tools -p "test_*.py")
 CLAUDE.md, README.md, .gitignore
 ```
 À venir selon le plan : `tools/schema.sql`, importeur, `engine/` (conjugaison anglaise en Dart pur),
@@ -147,3 +149,20 @@ Fichiers entiers ; détail dans la release `analyse-phase0` (rapport, statistiqu
 
 À décider avec Chadrack : un ou deux accents dans le pack audio ; gestion des contractions et possessifs ;
 seuils de qualité pour le rapport de la phase 1.
+
+## 10. Phase 1 — base de données (2 novembre 2026)
+
+Construite par `data.yml` (≈ 15-30 min), publiée en `dictionnaire-en-fr.db.gz` dans la release `base-donnees`
+avec `rapport_base.md/json`. Ordre : `lire --edition en`, `lire --edition fr`, `finaliser`, `rapport`.
+Choix : accent US d'abord pour l'audio ; contractions par table à la main (64 lignes) ; possessif 's par règle
+de l'application (phase 2) ; un mot sans équivalent ni définition française n'est gardé que si son rang de
+fréquence est ≤ 30 000 (`seuil_rang`) ; accents corrigés (Southern-England = britannique).
+
+Résultat : 188 Mo non compressé ; 213 721 mots, 174 049 avec équivalent français, 253 952 traductions
+(en 67 226, en+fr 49 914, fr 136 812), 211 291 renvois « forme de », 93 320 fichiers audio (us 33 771,
+uk 28 019, au 9 799, autre 22 534). Couverture des mots courants : 99,6 % (1000), 98,8 % (5000),
+96,9 % (10 000), 92,7 % (20 000). Aucune anomalie bloquante.
+
+À traiter en phase 2 : formes courantes sans équivalent (could, looking, turned, teeth, installed, women's…)
+→ vérifier les renvois et les verbes sans formes (13 715 sur 22 411 verbes ont des formes) ; possessifs ;
+noms propres ; 64 traductions de plus de 60 caractères ; auteur et licence de chaque audio (API Commons).
