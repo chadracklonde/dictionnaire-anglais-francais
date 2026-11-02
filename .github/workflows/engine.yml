@@ -1,0 +1,33 @@
+name: Phase 2 - Tester le moteur
+
+# Analyse statique et tests du moteur Dart (engine/). Le Dart n'est jamais compilé en local :
+# cette CI est la seule validation.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "engine/**"
+      - ".github/workflows/engine.yml"
+
+jobs:
+  moteur:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: engine
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Dépendances
+        run: dart pub get
+
+      - name: Analyse
+        run: dart analyze
+
+      - name: Tests
+        run: dart test

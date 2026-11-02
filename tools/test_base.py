@@ -127,8 +127,20 @@ class Base(unittest.TestCase):
         self.assertEqual(formes, {"goes", "went", "gone"})  # ni « go » lui-même ni les balises de tableau
 
     def test_renvois(self):
-        self.assertEqual(self.q("SELECT forme_norm, lemme_norm FROM renvois ORDER BY forme_norm"),
-                         [("gone", "go"), ("went", "go")])  # « geese -> goose » : goose absent -> supprimé
+        renvois = self.q("SELECT forme_norm, lemme_norm FROM renvois ORDER BY forme_norm, lemme_norm")
+        for attendu in (("gone", "go"), ("went", "go")):
+            self.assertIn(attendu, renvois)
+        self.assertNotIn("geese", [f for f, _ in renvois])  # goose absent -> renvoi supprimé
+
+    def test_renvois_deduits_des_formes_du_mot_de_base(self):
+        self.assertIn(("goes", "go"), self.q("SELECT forme_norm, lemme_norm FROM renvois"))
+        self.assertNotIn(("go", "go"), self.q("SELECT forme_norm, lemme_norm FROM renvois"))
+        self.assertGreaterEqual(self.fin["renvois_par_formes"], 1)
+
+    def test_renvois_deduits_des_definitions(self):
+        self.assertEqual(self.q("SELECT lemme_norm, etiquettes FROM renvois WHERE forme_norm = 'could'"),
+                         [("can", "conditional")])
+        self.assertEqual(self.fin["renvois_par_definitions"], 1)
 
     # --- audio
     def test_accents_de_l_audio(self):

@@ -26,6 +26,7 @@ import datetime
 import gzip
 import json
 import os
+import re
 import sqlite3
 import sys
 import unicodedata
@@ -71,6 +72,12 @@ NATURES = {
     "déterminant": "det", "nom propre": "name", "locution": "phrase",
 }
 IGNORER_FORMES = {"table-tags", "inflection-template", "class", "romanization"}
+
+# « past tense of can », « plural of tooth »… dans une définition ou son contexte.
+PATRON_RENVOI = re.compile(r"^(?P<et>[a-z][a-z ,'\-]{1,80}?) of (?P<lemme>[a-z][^,;:()]{0,60})$", re.I)
+MOTS_GRAMMAIRE = ("tense", "participle", "plural", "singular", "comparative", "superlative",
+                  "conditional", "gerund", "subjunctive", "indicative", "imperative", "possessive",
+                  "inflection", "contraction")
 
 
 # ---------------------------------------------------------------- texte
@@ -392,6 +399,49 @@ def charger_contractions(conn, path):
     return n
 
 
+def deriver_renvois(conn):
+    """Complète les renvois « forme -> mot de base » que l'import n'a pas vus.
+
+    1. Les formes listées par le mot de base (turn -> turned, tooth -> teeth) deviennent des renvois
+       inverses : on retrouve le mot de base en cherchant la forme.
+    2. Un mot sans équivalent dont la définition (ou son contexte) dit « past tense of can »,
+       « plural of X »… renvoie vers ce mot de base, s'il a des équivalents.
+    Renvoie (renvois par formes, renvois par définitions).
+    """
+    cur = conn.cursor()
+    avant = cur.execute("SELECT COUNT(*) FROM renvois").fetchone()[0]
+    rows = cur.execute("SELECT f.forme, f.etiquettes, m.mot_norm, m.nature FROM formes f "
+                       "JOIN mots m ON m.id = f.mot_id").fetchall()
+    cur.executemany(
+        "INSERT OR IGNORE INTO renvois(forme, forme_norm, nature, lemme_norm, etiquettes) "
+        "VALUES (?, ?, ?, ?, ?)",
+        [(form, norm(form), nature, lemme, etiq.replace(",", ", "))
+         for form, etiq, lemme, nature in rows if " " not in form.strip() and norm(form) != lemme])
+    apres_formes = cur.execute("SELECT COUNT(*) FROM renvois").fetchone()[0]
+
+    avec_equivalent = {r[0] for r in cur.execute(
+        "SELECT DISTINCT m.mot_norm FROM mots m JOIN traductions t ON t.mot_id = m.id")}
+    candidats = cur.execute(
+        "SELECT m.mot, m.mot_norm, m.nature, s.contexte, s.definition FROM mots m "
+        "JOIN sens s ON s.mot_id = m.id "
+        "WHERE NOT EXISTS (SELECT 1 FROM traductions t WHERE t.mot_id = m.id) "
+        "ORDER BY s.ordre").fetchall()
+    ajouts = []
+    for mot, mot_norm, nature, contexte, definition in candidats:
+        for texte in (contexte, definition):
+            m = PATRON_RENVOI.match(texte or "")
+            if not m or not any(g in m.group("et").casefold() for g in MOTS_GRAMMAIRE):
+                continue
+            lemme = norm(m.group("lemme"))
+            if lemme != mot_norm and lemme in avec_equivalent:
+                ajouts.append((mot, mot_norm, nature, lemme, clip(m.group("et"), 80)))
+                break
+    cur.executemany("INSERT OR IGNORE INTO renvois(forme, forme_norm, nature, lemme_norm, etiquettes) "
+                    "VALUES (?, ?, ?, ?, ?)", ajouts)
+    apres = cur.execute("SELECT COUNT(*) FROM renvois").fetchone()[0]
+    return apres_formes - avant, apres - apres_formes
+
+
 def finaliser(conn, frequence=None, contractions=CONTRACTIONS, seuil_rang=SEUIL_RANG_DEFAUT):
     """Contractions, rangs, élagage, index. Renvoie un dictionnaire de chiffres."""
     res = {}
@@ -405,6 +455,8 @@ def finaliser(conn, frequence=None, contractions=CONTRACTIONS, seuil_rang=SEUIL_
         cur.execute("UPDATE mots SET rang = (SELECT rang FROM freq WHERE freq.mot_norm = mots.mot_norm)")
         cur.execute("DROP TABLE freq")
         res["mots_classes"] = cur.execute("SELECT COUNT(*) FROM mots WHERE rang IS NOT NULL").fetchone()[0]
+
+    res["renvois_par_formes"], res["renvois_par_definitions"] = deriver_renvois(conn)
 
     # Élagage : un mot sans équivalent ni définition française n'est gardé que s'il est courant.
     avant = cur.execute("SELECT COUNT(*) FROM mots").fetchone()[0]

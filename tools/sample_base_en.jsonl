@@ -13,4 +13,6 @@
 {"word": "a", "lang_code": "en", "pos": "character", "senses": [{"glosses": ["The letter a."]}]}
 {"word": "casa", "lang_code": "es", "pos": "noun", "senses": [{"glosses": ["house"]}]}
 {"word": "vide", "lang_code": "en", "pos": "noun", "senses": []}
+{"word": "can", "lang_code": "en", "pos": "verb", "senses": [{"glosses": ["To be able to."]}], "translations": [{"lang_code": "fr", "word": "pouvoir"}]}
+{"word": "could", "lang_code": "en", "pos": "verb", "senses": [{"glosses": ["conditional of can", "Used as a past subjunctive."]}]}
 {pas du json

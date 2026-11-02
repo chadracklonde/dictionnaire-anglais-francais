@@ -2,7 +2,7 @@
 
 > Lu automatiquement par Claude Code à l'ouverture du dépôt. **Aucun mot de passe ici** : les secrets
 > sont décrits (où ils sont, comment ils s'appellent), jamais écrits.
-> Dernière mise à jour : 2 novembre 2026 · état : phases 0 et 1 faites (résultats en §9 et §10), phase 2 à lancer, rien de publié.
+> Dernière mise à jour : 2 novembre 2026 · état : phases 0 et 1 faites (§9, §10), phase 2 écrite (§11) en attente de validation par la CI Dart, rien de publié.
 
 ## 1. En bref
 
@@ -46,11 +46,12 @@ tools/couverture_frequence.py   Couverture du vocabulaire courant via wordfreq (
 tools/sample_en.jsonl, sample_fr.jsonl   Jeux d'essai
 tools/schema.sql, construire_base.py, liste_frequence.py, data/contractions.tsv   Phase 1 : base SQLite
 .github/workflows/data.yml      Phase 1 : construit et publie la base (release « base-donnees »)
-tools/test_analyse.py, test_base.py   Tests (python3 -I -m unittest discover -s tools -p "test_*.py")
+tools/test_analyse.py, test_base.py, test_requetes.py   Tests (python3 -I -m unittest discover -s tools -p "test_*.py")
+engine/                         Phase 2 : moteur en Dart pur (lib/src : normalisation, requetes, source, source_sql, regles, moteur, conjugaison ; test/)
+.github/workflows/engine.yml    Phase 2 : dart pub get, dart analyze, dart test
 CLAUDE.md, README.md, .gitignore
 ```
-À venir selon le plan : `tools/schema.sql`, importeur, `engine/` (conjugaison anglaise en Dart pur),
-`app/` (Flutter), `build.yml`, `data.yml`, politique de confidentialité.
+À venir selon le plan : `app/` (Flutter), `build.yml`, politique de confidentialité.
 
 ## 4. Plan par phases
 
@@ -166,3 +167,30 @@ uk 28 019, au 9 799, autre 22 534). Couverture des mots courants : 99,6 % (1000)
 À traiter en phase 2 : formes courantes sans équivalent (could, looking, turned, teeth, installed, women's…)
 → vérifier les renvois et les verbes sans formes (13 715 sur 22 411 verbes ont des formes) ; possessifs ;
 noms propres ; 64 traductions de plus de 60 caractères ; auteur et licence de chaque audio (API Commons).
+
+## 11. Phase 2 — moteur (2 novembre 2026)
+
+**Données** (`construire_base.py`, `finaliser`) : nouveaux renvois « forme → mot de base » déduits des formes
+listées par le mot de base (turned → turn, teeth → tooth : +22 665 sur la base d'essai) et, pour quatre cas,
+des définitions (« conditional of can »). Sur la base de phase 1 cela porte la couverture à 100 % (1000),
+98,9 % (5000), 96,8 % (10 000), 91,9 % (20 000) ; les manques restants sont surtout des noms propres et des
+possessifs (règle du moteur). **La base doit être reconstruite** (`data.yml`) pour en profiter.
+
+**Moteur** (`engine/`, Dart pur, sans Flutter) :
+- `Source` (interface) + `SourceSql` : l'application fournit un `ExecuteurSql` (sqflite / sqlite3). Les
+  requêtes SQL sont dans `requetes.dart` et **testées en Python contre une vraie base** (`test_requetes.py`,
+  y compris l'usage d'index). Garder une constante `const String` par bloc de texte triple, sans dollar.
+- `Moteur.chercher(texte)` cherche dans les deux sens : mot direct, formes fléchies de la base, contractions,
+  possessifs (`'s`), formes régulières par règles (pluriels, -ed, -ing, comparatifs, -ly), pluriels et féminins
+  français ; renvoie des fiches (EN→FR), des entrées inverses (FR→EN), la règle appliquée et des suggestions.
+  Les formes conjuguées des verbes français ne sont pas dans la base : non couvertes.
+- `Moteur.suggerer` (pendant la frappe, ≥ 2 caractères) et suggestions approchées quand rien n'est trouvé.
+- `conjuguer` : formes de la base, table de ~140 verbes irréguliers (et composés : overcome, withdraw…),
+  puis règles d'orthographe (doublement de la consonne, y → ied, -ie → -ying…) ; temps : présent, présent
+  continu, prétérit, prétérit continu, présent parfait, plus-que-parfait, futur, futur antérieur, conditionnel
+  présent et passé, impératif ; formes affirmative, négative, interrogative ; verbes à particule, be, modaux.
+- Normalisation (`plier`, `normaliser`) : accord avec Python vérifié par `engine/test/pliage.tsv` (tests des
+  deux côtés). Dart n'a pas de normalisation Unicode : table de lettres accentuées écrite à la main.
+
+**Validation** : `engine.yml` (`dart analyze` + `dart test`) se déclenche à chaque push sous `engine/`. Le Dart
+n'est jamais compilé ici : lire les annotations de cette CI et corriger avant d'aller plus loin.
