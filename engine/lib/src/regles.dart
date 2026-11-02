@@ -61,7 +61,7 @@ List<Candidat> candidatsLemmes(String mot) {
     if (doublee(2)) ajouter(sans(3), passe);
     ajouter(sans(2), passe);
     ajouter(sans(1), passe);
-    if (m.endsWith('ked') && m.length > 4) ajouter('${sans(3)}c', passe);
+    if (m.endsWith('cked') && m.length > 5) ajouter(sans(3), passe);
   }
 
   // participe présent
@@ -71,7 +71,7 @@ List<Candidat> candidatsLemmes(String mot) {
     if (doublee(3)) ajouter(sans(4), gerondif);
     ajouter(sans(3), gerondif);
     ajouter('${sans(3)}e', gerondif);
-    if (m.endsWith('king') && m.length > 5) ajouter('${sans(4)}c', gerondif);
+    if (m.endsWith('cking') && m.length > 6) ajouter(sans(4), gerondif);
   }
 
   // comparatif et superlatif

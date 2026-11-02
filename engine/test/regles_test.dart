@@ -27,6 +27,7 @@ void main() {
       expect(lemmes('making'), contains('make'));
       expect(lemmes('running'), contains('run'));
       expect(lemmes('dying'), contains('die'));
+      expect(lemmes('picnicking'), contains('picnic'));
     });
 
     test('comparatif, superlatif, adverbe', () {
