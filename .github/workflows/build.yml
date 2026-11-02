@@ -112,7 +112,7 @@ jobs:
               s=s.replace('signingConfigs.debug','signingConfigs.release')
               open(grv,'w',encoding='utf-8').write(s)
           PY
-          grep -n "signingConfig" android/app/build.gradle* || true
+          echo "::notice::SIGNATURE $(grep -n 'signingConfig\|Properties\|key.properties' android/app/build.gradle* | tr '\n' '|' | cut -c1-900)"
       - name: Analyse
         working-directory: app
         run: |
@@ -120,11 +120,13 @@ jobs:
           echo "::notice::ANALYSE-OK $(grep -cE 'warning|info' analyse.txt || true) remarques non bloquantes"
       - name: APK
         working-directory: app
-        run: flutter build apk --release
+        run: |
+          flutter build apk --release > apk.txt 2>&1 || { echo "::error::APK $(grep -iE 'error|wrong|exception|what went wrong|not found|failed|keystore|signing' -A1 apk.txt | head -14 | tr '\n' '|' | cut -c1-1500)"; exit 1; }
+          tail -3 apk.txt
       - name: Bundle Play Store (.aab)
         working-directory: app
         run: |
-          flutter build appbundle --release
+          flutter build appbundle --release > aab.txt 2>&1 || { echo "::error::AAB $(grep -iE 'error|wrong|exception|keystore|signing' -A1 aab.txt | head -14 | tr '\n' '|' | cut -c1-1500)"; exit 1; }
           ls -l build/app/outputs/bundle/release/app-release.aab
       - uses: actions/upload-artifact@v4
         with:
