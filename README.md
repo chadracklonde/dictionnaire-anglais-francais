@@ -17,7 +17,7 @@ Le détail est dans `CLAUDE.md`.
 ## Lancer la phase 0
 
 Onglet **Actions** → « Phase 0 - Analyser les sources » → *Run workflow*.
-Pour un essai rapide, renseigner `limit` (par exemple `200000`). Le rapport apparaît en annotation
+Pour un essai rapide, renseigner `limit` (par exemple `1000000`). Le rapport apparaît en annotation
 `RAPPORT-PHASE0` et dans la release `analyse-phase0`.
 
 ## Tests

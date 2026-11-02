@@ -48,6 +48,14 @@ class AnalyseEn(unittest.TestCase):
         self.assertEqual(self.stats["verbes_passe_et_participe"], 1)
         self.assertEqual(self.stats["anglais_formes_renvoi"], 1)
 
+    def test_ancienne_cle_code_pour_les_traductions(self):
+        ligne = (b'{"word": "cat", "lang_code": "en", "pos": "noun", '
+                 b'"senses": [{"glosses": ["A feline."]}], '
+                 b'"translations": [{"code": "fr", "lang": "French", "word": "chat", "sense": "animal"}]}')
+        stats, pairs, _ = a.analyse([ligne], "en")
+        self.assertEqual(stats["traductions_fr"], 1)
+        self.assertIn(("cat", "chat"), pairs)
+
     def test_limite(self):
         stats, _, _ = a.analyse(lines("sample_en.jsonl"), "en", limit=2)
         self.assertEqual(stats["lignes"], 2)

@@ -9,15 +9,15 @@ on:
   workflow_dispatch:
     inputs:
       url_en:
-        description: "Extraction du Wiktionnaire anglais (JSONL, .gz accepté)"
+        description: "Wiktionnaire anglais, toutes langues (JSONL, .gz accepté)"
         required: true
-        default: "https://kaikki.org/dictionary/downloads/en/en-extract.jsonl.gz"
+        default: "https://kaikki.org/dictionary/raw-wiktextract-data.jsonl.gz"
       url_fr:
         description: "Extraction du Wiktionnaire français (JSONL, .gz accepté)"
         required: true
         default: "https://kaikki.org/dictionary/downloads/fr/fr-extract.jsonl.gz"
       limit:
-        description: "Lignes à lire par source (vide = tout). Essai rapide : 200000"
+        description: "Lignes à lire par source (vide = tout). Essai rapide : 1000000"
         required: false
         default: ""
       probe_audio:
@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 350
     env:
-      URL_EN: ${{ inputs.url_en || 'https://kaikki.org/dictionary/downloads/en/en-extract.jsonl.gz' }}
+      URL_EN: ${{ inputs.url_en || 'https://kaikki.org/dictionary/raw-wiktextract-data.jsonl.gz' }}
       URL_FR: ${{ inputs.url_fr || 'https://kaikki.org/dictionary/downloads/fr/fr-extract.jsonl.gz' }}
       LIMIT: ${{ inputs.limit }}
       PROBE_AUDIO: ${{ inputs.probe_audio || '0' }}
@@ -72,9 +72,13 @@ jobs:
           echo "::notice title=INVENTAIRE::$report"
           # Liste de contrôle : les fichiers JSONL que kaikki.org annonce.
           links=$(curl -sL -m 60 https://kaikki.org/dictionary/rawdata.html \
-            | grep -oE 'href="[^"]*\.jsonl(\.gz)?"' | head -20 \
+            | grep -oE 'href="[^"]*\.jsonl(\.gz)?"' | head -120 \
             | sed 's/href=//' | tr -d '"' | paste -sd' ' || true)
           [ -n "$links" ] && echo "::notice title=INVENTAIRE-LIENS::$links"
+          for extra in https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl; do
+            h=$(curl -sIL -m 60 "$extra" | grep -iE '^(HTTP|content-length)' | tr -d '\r' | paste -sd' ' || true)
+            echo "::notice title=INVENTAIRE-ANGLAIS-SEUL::$extra -> ${h:-aucune réponse}"
+          done
           [ -z "${missing:-}" ]
 
       - name: Analyser le Wiktionnaire anglais

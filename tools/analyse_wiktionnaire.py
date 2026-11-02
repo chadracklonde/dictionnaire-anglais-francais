@@ -13,7 +13,8 @@ Usage :
   curl -sSL URL | gunzip -c | python3 -I tools/analyse_wiktionnaire.py \
       --edition en --out resultats [--limit 100000]
 
---edition en : Wiktionnaire anglais (entrées anglaises, traductions vers le français)
+--edition en : Wiktionnaire anglais, fichier raw-wiktextract-data (toutes langues :
+               seules les entrées anglaises sont retenues, avec leurs traductions vers le français)
 --edition fr : Wiktionnaire français (entrées françaises -> traductions anglaises,
                et entrées anglaises définies en français)
 """
@@ -99,6 +100,15 @@ def has_sense_label(tr):
     return bool(tr.get("sense") or tr.get("sense_index"))
 
 
+def translations_to(entry, code):
+    """Traductions de l'entrée vers la langue `code`.
+
+    Les versions récentes de wiktextract écrivent `lang_code`, les anciennes `code`.
+    """
+    return [t for t in (entry.get("translations") or [])
+            if (t.get("lang_code") or t.get("code")) == code and t.get("word")]
+
+
 def analyse(lines, edition, limit=None):
     """Parcourt un itérable de lignes JSON. Renvoie (stats, paires, échantillons)."""
     c = collections.Counter()
@@ -142,8 +152,7 @@ def analyse(lines, edition, limit=None):
             if any(s.get("examples") for s in senses):
                 c["anglais_avec_exemple"] += 1
 
-            trs = [t for t in (e.get("translations") or [])
-                   if t.get("lang_code") == "fr" and t.get("word")]
+            trs = translations_to(e, "fr")
             if trs:
                 c["anglais_avec_traduction_fr"] += 1
                 c["traductions_fr"] += len(trs)
@@ -163,8 +172,7 @@ def analyse(lines, edition, limit=None):
         elif edition == "fr":
             if lang == "fr":
                 c["entrees_francaises"] += 1
-                trs = [t for t in (e.get("translations") or [])
-                       if t.get("lang_code") == "en" and t.get("word")]
+                trs = translations_to(e, "en")
                 if trs:
                     c["francais_avec_traduction_en"] += 1
                     c["traductions_en"] += len(trs)

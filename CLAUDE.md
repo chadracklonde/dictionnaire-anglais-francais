@@ -60,10 +60,16 @@ CLAUDE.md, README.md, .gitignore
 
 ## 5. Phase 0 — mode d'emploi
 
-1. Actions → « Phase 0 - Analyser les sources » → Run workflow. Essai rapide : `limit` = `200000`.
+1. Actions → « Phase 0 - Analyser les sources » → Run workflow. Essai rapide : `limit` = `1000000`.
 2. Le workflow vérifie d'abord que les deux URL répondent (annotations `INVENTAIRE`, `INVENTAIRE-LIENS`,
-   `ANALYSE-0 source introuvable`). **Les noms exacts des fichiers kaikki.org n'ont pas été vérifiés
-   depuis une session Claude** : si l'inventaire signale une erreur, corriger les URL par défaut.
+   `ANALYSE-0 source introuvable`). Sources (contrôlées par la CI le 2 novembre 2026) :
+   - français : `https://kaikki.org/dictionary/downloads/fr/fr-extract.jsonl.gz` (≈ 737 Mo compressé) ;
+   - anglais : `https://kaikki.org/dictionary/raw-wiktextract-data.jsonl.gz` (toutes langues, filtré par
+     le script sur `lang_code = en`). **`downloads/en/en-extract.jsonl.gz` n'existe pas (404)** : les
+     fichiers `downloads/XX/XX-extract` ne couvrent que les éditions non anglaises.
+   - le format réel des traductions (`lang_code` ou `code`) n'est pas vérifié ; le script accepte les deux.
+   - un essai à `limit` fixe lit le début du fichier, où les entrées anglaises sont mélangées aux autres
+     langues : ses chiffres valident le circuit, pas la couverture.
 3. Le rapport sort en annotation `RAPPORT-PHASE0` et dans la release `analyse-phase0`
    (`rapport_phase0.md/json`, statistiques, échantillons, paires de traductions).
 4. Lire le rapport, décider des seuils de qualité, finaliser le schéma (phase 1).
