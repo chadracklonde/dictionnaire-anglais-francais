@@ -57,7 +57,7 @@ jobs:
           p='android/app/src/main/AndroidManifest.xml'
           s=open(p,encoding='utf-8').read()
           intents='<intent><action android:name="android.intent.action.VIEW"/><data android:scheme="https"/></intent><intent><action android:name="android.intent.action.TTS_SERVICE"/></intent>'
-          s=re.sub(r'android:label="[^"]*"','android:label="Dictionnaire Anglais-Français"',s,count=1)
+          s=re.sub(r'android:label="[^"]*"','android:label="Anglais Français"',s,count=1)
           if '<queries>' in s:
               s=s.replace('<queries>','<queries>'+intents,1)
           else:
@@ -168,7 +168,7 @@ jobs:
         shell: bash
         run: |
           flutter create --project-name dicoenfr --platforms=windows .
-          sed -i 's/L"dicoenfr"/L"Dictionnaire Anglais-Français"/' windows/runner/main.cpp
+          sed -i 's/L"dicoenfr"/L"Anglais Français"/' windows/runner/main.cpp
           flutter pub get
           dart run flutter_launcher_icons -f icons_config/windows.yaml
           flutter build windows --release

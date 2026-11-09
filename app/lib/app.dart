@@ -109,7 +109,7 @@ class _DictionnaireAppState extends State<DictionnaireApp> {
   Widget _application(AppServices? services) {
     final user = services?.user;
     return MaterialApp(
-      title: 'Dictionnaire Anglais-Français',
+      title: 'Anglais Français',
       debugShowCheckedModeBanner: false,
       theme: construireTheme(Brightness.light),
       darkTheme: construireTheme(Brightness.dark),

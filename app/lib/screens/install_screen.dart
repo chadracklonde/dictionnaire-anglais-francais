@@ -49,12 +49,12 @@ class InstallScreen extends StatelessWidget {
                     Image.asset('assets/icon/book.png', width: largeurLivre),
                     const SizedBox(height: 28),
                     const Text(
-                      'Dictionnaire',
+                      'Anglais',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: blanc, fontSize: 36, fontWeight: FontWeight.w800, height: 1.1),
                     ),
                     const Text(
-                      'Anglais-Français',
+                      'Français',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                           color: Couleurs.or, fontSize: 36, fontWeight: FontWeight.w800, height: 1.15),

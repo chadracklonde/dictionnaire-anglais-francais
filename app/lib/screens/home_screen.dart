@@ -70,7 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final user = AppScope.of(context).user;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dictionnaire Anglais-Français'),
+        title: const Text('Anglais Français'),
         actions: [
           IconButton(
             tooltip: 'À propos',

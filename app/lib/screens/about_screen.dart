@@ -33,7 +33,7 @@ class _AboutScreenState extends State<AboutScreen> {
       body: ListView(
         padding: padPage(context),
         children: [
-          Text('Dictionnaire Anglais-Français', style: theme.textTheme.headlineSmall),
+          Text('Anglais Français', style: theme.textTheme.headlineSmall),
           const SizedBox(height: 4),
           const Text('Version $appVersion · par Chadrack Londe, Kindu (RDC)'),
           const SizedBox(height: 16),
@@ -92,7 +92,7 @@ class _AboutScreenState extends State<AboutScreen> {
             label: const Text('Licences des bibliothèques'),
             onPressed: () => showLicensePage(
               context: context,
-              applicationName: 'Dictionnaire Anglais-Français',
+              applicationName: 'Anglais Français',
               applicationVersion: appVersion,
             ),
           ),
