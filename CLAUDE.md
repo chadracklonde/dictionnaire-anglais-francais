@@ -1,12 +1,12 @@
-# Dictionnaire Anglais-Français — dossier de reprise du projet
+# Anglais Français — dossier de reprise du projet
 
 > Lu automatiquement par Claude Code à l'ouverture du dépôt. **Aucun mot de passe ici** : les secrets
 > sont décrits (où ils sont, comment ils s'appellent), jamais écrits.
-> Dernière mise à jour : 2 novembre 2026 · état : phases 0 à 2 faites (§9-§11), phase 3 compilée (§12), phase 4 compilée par la CI (§13), rien de publié.
+> Dernière mise à jour : 9 novembre 2026 · état : phases 0 à 2 faites (§9-§11), phase 3 compilée (§12), phase 4 compilée par la CI (§13), rien de publié.
 
 ## 1. En bref
 
-- **Nom** : Dictionnaire Anglais-Français — application à part entière, distincte de
+- **Nom** : **Anglais Français** (nom affiché dans l'application et sur le téléphone ; ancien nom de travail « Dictionnaire Anglais-Français ») — application à part entière, distincte de
   « Dictionnaire et Conjugaison » (dépôt `chadracklonde/dictionnaire-francais`).
 - **Auteur / éditeur** : Chadrack Londe, Kindu (RDC).
 - **Dépôt** : `chadracklonde/dictionnaire-anglais-francais` (public), branche `main`.
@@ -227,3 +227,16 @@ titres sémantiques (fiche, tutoriel), raccourcis de l'accueil annoncés comme b
 taille de texte réglable ; À propos avec mention CC BY-SA 4.0 (phase 3). Contrastes : `test_contrastes.py`.
 Non fait : notes personnelles, essai avec TalkBack, barre latérale de navigation sur grand écran.
 Validation : `build.yml` (une seule exécution), puis essai sur téléphone et sur Windows.
+
+## 14. Signature, icône et nom (9 novembre 2026)
+
+- **Signature** : clé de téléversement `upload-keystore.jks` (alias `dicoenfr`) créée le 2 novembre 2026 ; secrets
+  `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_PASSWORD`, `KEY_ALIAS` en place ; l'APK publié porte bien l'empreinte
+  SHA-256 `8E:B8:BE:34:D1:BE:8F:F0:C7:71:74:D8:AC:4F:32:18:18:61:BD:03:7F:3A:AE:E0:AB:48:DB:B6:99:C2:B1:88`.
+  Activer Play App Signing au premier téléversement. Sauvegarde du `.jks` : à la charge de Chadrack (deux endroits).
+- **Nom affiché** : « Anglais Français » (libellé Android, titre Windows, écrans). Identifiant Android inchangé.
+- **Icône** : livre ouvert, « EN » (bleu) page de gauche, « FR » (rouge) page de droite, très grands, fond rouge dégradé,
+  couverture dorée. Générée par `python3 tools/make_icon.py` (Pillow + Poppins Bold) vers `app/assets/icon/` ;
+  le foreground adaptatif reste dans la zone sûre de 66 %.
+- Les commits se font au nom de Chadrack Londe (pas de mention de Claude).
+- Reste pour la phase 5 : `CONFIDENTIALITE.md`, fiche Play Store, audio par Play Asset Delivery.
