@@ -13,7 +13,7 @@ import 'screens/install_screen.dart';
 import 'theme.dart';
 
 /// Version affichée dans « À propos » (à garder alignée sur pubspec.yaml).
-const String appVersion = '0.5.0';
+const String appVersion = '0.6.0';
 
 /// Services partagés par tous les écrans.
 class AppServices {
@@ -22,6 +22,15 @@ class AppServices {
   final Moteur moteur;
   final SourceSql source;
   final UserStore user;
+
+  /// Premier mot (le plus courant) dont l'écriture correspond à [texte].
+  Future<Mot?> motParTexte(String texte) async {
+    final trouves = await source.motsParRecherche(plier(texte));
+    for (final m in trouves) {
+      if (m.nature != 'name') return m;
+    }
+    return trouves.isEmpty ? null : trouves.first;
+  }
 
   /// Retrouve un mot à partir de sa clé « mot<TAB>nature ».
   Future<Mot?> resoudre(String cle) async {

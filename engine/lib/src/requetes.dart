@@ -127,6 +127,14 @@ ORDER BY m.rang IS NULL, m.rang, m.id
 LIMIT ?
 ''';
 
+/// Équivalents français tirés au hasard (mauvaises réponses du quiz). Paramètre : nombre voulu.
+const String requeteEquivalentsHasard = '''
+SELECT fr FROM traductions
+WHERE id >= (ABS(RANDOM()) % (SELECT MAX(id) FROM traductions)) + 1
+  AND source = 'en+fr' AND length(fr) <= 25 AND fr NOT LIKE '% %'
+LIMIT ?
+''';
+
 /// Français → anglais. Paramètres : texte plié, nombre maximal de lignes.
 const String requeteAnglaisParFrancais = '''
 SELECT m.id, m.mot, m.nature, m.rang, t.fr, t.etiquette, t.genre, t.source

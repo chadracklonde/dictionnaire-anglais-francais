@@ -39,6 +39,9 @@ abstract class Source {
   Future<List<ParDefinition>> parDefinition(List<String> termes,
       {required bool francais, required int limite});
 
+  /// Équivalents français pris au hasard : mauvaises réponses d'un quiz.
+  Future<List<String>> equivalentsHasard(int nombre);
+
   /// Faux ami, d'après le mot anglais en minuscules.
   Future<FauxAmi?> fauxAmi(String mot);
 

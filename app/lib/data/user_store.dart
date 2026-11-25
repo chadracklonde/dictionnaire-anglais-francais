@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:dicoenfr_engine/dicoenfr_engine.dart' show Carte, numeroDeJour;
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -10,7 +11,8 @@ class UserStore extends ChangeNotifier {
       : favoris = List.of(_prefs.getStringList('favoris') ?? const []),
         historique = List.of(_prefs.getStringList('historique') ?? const []),
         notes = _decoderNotes(_prefs.getString('notes')),
-        listes = _decoderListes(_prefs.getString('listes'));
+        listes = _decoderListes(_prefs.getString('listes')),
+        revisions = _decoderRevisions(_prefs.getString('revisions'));
 
   static const int _historiqueMax = 100;
 
@@ -23,6 +25,24 @@ class UserStore extends ChangeNotifier {
 
   /// Listes personnelles : nom → clés des mots (dans l'ordre d'ajout).
   final Map<String, List<String>> listes;
+
+  /// Cartes de révision : clé du mot → état de la carte.
+  final Map<String, Carte> revisions;
+
+  static Map<String, Carte> _decoderRevisions(String? brut) {
+    final resultat = <String, Carte>{};
+    if (brut == null) return resultat;
+    try {
+      final data = jsonDecode(brut);
+      if (data is Map) {
+        data.forEach((k, v) {
+          final carte = Carte.depuisJson(v);
+          if (k is String && carte != null) resultat[k] = carte;
+        });
+      }
+    } catch (_) {}
+    return resultat;
+  }
 
   static const int _noteMax = 2000;
   static const int _nomListeMax = 60;
@@ -124,6 +144,36 @@ class UserStore extends ChangeNotifier {
     await _enregistrerListes();
   }
 
+  // ---- Révision ----
+
+  /// État de la carte d'un mot (neuve si le mot n'a jamais été révisé).
+  Carte carteDe(String cle) => revisions[cle] ?? const Carte();
+
+  /// Enregistre une réponse (su ou non) pour un mot.
+  Future<void> repondre(String cle, bool connu) async {
+    revisions[cle] = carteDe(cle).apresReponse(connu, numeroDeJour(DateTime.now()));
+    await _prefs.setString(
+        'revisions', jsonEncode({for (final e in revisions.entries) e.key: e.value.versJson()}));
+    notifyListeners();
+  }
+
+  /// Mots à réviser aujourd'hui parmi [cles] : les plus en retard d'abord.
+  List<String> aReviser(Iterable<String> cles) {
+    final jour = numeroDeJour(DateTime.now());
+    final dues = [for (final c in cles) if (carteDe(c).estDue(jour)) c];
+    dues.sort((a, b) => carteDe(a).prochaine.compareTo(carteDe(b).prochaine));
+    return dues;
+  }
+
+  /// Tous les mots qu'on peut réviser : favoris et mots des listes, sans doublon.
+  List<String> motsARevoir() {
+    final vus = <String>{...favoris};
+    for (final liste in listes.values) {
+      vus.addAll(liste);
+    }
+    return vus.toList();
+  }
+
   // ---- Sauvegarde ----
 
   /// Favoris, notes et listes sous forme de texte JSON (l'historique et les réglages restent locaux).
@@ -133,6 +183,7 @@ class UserStore extends ChangeNotifier {
         'favoris': favoris,
         'notes': notes,
         'listes': listes,
+        'revisions': {for (final e in revisions.entries) e.key: e.value.versJson()},
       });
 
   /// Fusionne une sauvegarde : les favoris et mots de listes absents sont ajoutés, les notes
@@ -178,6 +229,18 @@ class UserStore extends ChangeNotifier {
           if (c is String && c.isNotEmpty && !cible.contains(c)) cible.add(c);
         }
       });
+    }
+    final rev = data['revisions'];
+    if (rev is Map) {
+      rev.forEach((k, v) {
+        final carte = Carte.depuisJson(v);
+        // On garde la carte la plus avancée (la plus souvent révisée) entre l'appareil et le fichier.
+        if (k is String && k.isNotEmpty && carte != null && carte.vus > carteDe(k).vus) {
+          revisions[k] = carte;
+        }
+      });
+      await _prefs.setString(
+          'revisions', jsonEncode({for (final e in revisions.entries) e.key: e.value.versJson()}));
     }
     await _prefs.setStringList('favoris', favoris);
     await _prefs.setString('notes', jsonEncode(notes));

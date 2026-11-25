@@ -4,6 +4,7 @@ import 'conjugation_screen.dart';
 import 'favorites_screen.dart';
 import 'home_screen.dart';
 import 'index_screen.dart';
+import 'reviser_screen.dart';
 
 /// Écran principal : quatre onglets en bas, dont l'état est conservé d'un onglet à l'autre.
 class Shell extends StatefulWidget {
@@ -29,6 +30,7 @@ class _ShellState extends State<Shell> {
           children: const [
             HomeScreen(),
             IndexScreen(),
+            ReviserScreen(),
             ConjugationScreen(),
             FavoritesScreen(),
           ],
@@ -48,6 +50,11 @@ class _ShellState extends State<Shell> {
             NavigationDestination(
               icon: Icon(Icons.sort_by_alpha_rounded),
               label: 'Index',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.school_outlined),
+              selectedIcon: Icon(Icons.school_rounded),
+              label: 'Réviser',
             ),
             NavigationDestination(
               icon: Icon(Icons.menu_book_outlined),

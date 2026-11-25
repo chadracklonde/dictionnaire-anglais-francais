@@ -9,5 +9,6 @@ export 'src/normalisation.dart';
 export 'src/orthographe.dart';
 export 'src/regles.dart';
 export 'src/requetes.dart';
+export 'src/revision.dart';
 export 'src/source.dart';
 export 'src/source_sql.dart';

@@ -121,6 +121,10 @@ class SourceMemoire implements Source {
           : const [ParDefinition(motDog, 'A domesticated canine.')];
 
   @override
+  Future<List<String>> equivalentsHasard(int nombre) async =>
+      ['maison', 'table', 'rouge', 'voiture'].take(nombre).toList();
+
+  @override
   Future<List<Relation>> relations(int motId) async => relationsParMot[motId] ?? const [];
 
   @override
