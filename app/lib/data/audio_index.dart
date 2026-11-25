@@ -51,7 +51,7 @@ class IndexAudio {
   final Map<String, Object?> _fichiers;
   final List<PackAudio> packs;
 
-  static IndexAudio vide() => IndexAudio._(const {}, const []);
+  static IndexAudio aucun() => IndexAudio._(const {}, const []);
 
   static Future<IndexAudio>? _chargement;
 
@@ -78,7 +78,7 @@ class IndexAudio {
         ]..sort((a, b) => a.coeur != b.coeur ? (a.coeur ? -1 : 1) : a.nom.compareTo(b.nom)),
       );
     } catch (_) {
-      return IndexAudio.vide();
+      return IndexAudio.aucun();
     }
   }
 
