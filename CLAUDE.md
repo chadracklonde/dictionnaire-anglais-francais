@@ -272,3 +272,17 @@ le reste en packs facultatifs ; permission Internet acceptée **mais inutile** :
 - Dart : `data/audio_index.dart`, `audio_packs.dart`, `audio_lecture.dart`, `widgets/packs_audio.dart` (réglages).
 - Reste : essai sur téléphone depuis Google Play (test interne), déclaration du service de premier plan « synchronisation
   de données » dans la Play Console, Windows et macOS sans enregistrements.
+
+## 17. Lot 9 — apprentissage 2 (25 novembre 2026, version 0.8.0+8)
+
+Tout reste local (aucune donnée envoyée, aucune permission) :
+- `engine/lib/src/progression.dart` (+ test) : série de jours, meilleure série, taux de réussite, mots difficiles
+  (au moins 3 réponses et moins de 60 % de bonnes).
+- `UserStore` : activité par jour (réponses, nouveaux mots), objectif du jour (5/10/20/30), plafond de nouveaux mots par
+  jour (5/10/20/50) ; `aReviser` met les mots déjà vus d'abord puis les nouveaux dans la limite du plafond.
+  L'export/import des données inclut l'activité.
+- Écrans : bandeau « Aujourd'hui » et série sur l'onglet Réviser, `statistiques_screen.dart` (barres sur 14 jours),
+  quiz français → anglais et quiz des faux amis (`ModeQuiz`), « Mots difficiles », réglages « Apprentissage ».
+- SQL : `requeteMotsHasard`, `requeteFauxAmisHasard` (testées par `test_requetes.py`).
+- Pas fait : notification de rappel (demanderait la permission `POST_NOTIFICATIONS` et un greffon), dictée et
+  exercices à trous (à faire après l'essai de la voix enregistrée).

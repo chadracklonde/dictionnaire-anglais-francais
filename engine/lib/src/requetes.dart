@@ -135,6 +135,19 @@ WHERE id >= (ABS(RANDOM()) % (SELECT MAX(id) FROM traductions)) + 1
 LIMIT ?
 ''';
 
+/// Mots anglais courants tirés au hasard (mauvaises réponses du quiz inverse). Paramètre : nombre voulu.
+const String requeteMotsHasard = '''
+SELECT mot FROM mots
+WHERE id >= (ABS(RANDOM()) % (SELECT MAX(id) FROM mots)) + 1
+  AND rang IS NOT NULL AND rang <= 20000 AND nature != 'name' AND mot NOT LIKE '% %'
+LIMIT ?
+''';
+
+/// Faux amis tirés au hasard (quiz). Paramètre : nombre voulu.
+const String requeteFauxAmisHasard = '''
+SELECT mot, piege, vrai FROM faux_amis ORDER BY RANDOM() LIMIT ?
+''';
+
 /// Français → anglais. Paramètres : texte plié, nombre maximal de lignes.
 const String requeteAnglaisParFrancais = '''
 SELECT m.id, m.mot, m.nature, m.rang, t.fr, t.etiquette, t.genre, t.source

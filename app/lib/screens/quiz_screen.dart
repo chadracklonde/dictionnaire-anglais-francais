@@ -4,20 +4,26 @@ import 'package:flutter/material.dart';
 import '../app.dart';
 import '../widgets/mise_en_page.dart';
 
-class _Question {
-  const _Question(this.cle, this.mot, this.bonne, this.options);
+/// Sorte de quiz : le mot anglais à traduire, le mot français à retrouver en anglais, ou les faux amis.
+enum ModeQuiz { anglaisFrancais, francaisAnglais, fauxAmis }
 
-  final String cle;
-  final Mot mot;
+class _Question {
+  const _Question(this.cle, this.intitule, this.bonne, this.options, [this.explication = '']);
+
+  /// Mot révisé (clé « mot<TAB>nature »), ou null pour un faux ami : la progression n'en tient pas compte.
+  final String? cle;
+  final String intitule;
   final String bonne;
   final List<String> options;
+  final String explication;
 }
 
 /// Quiz de dix questions : un mot anglais, quatre propositions françaises.
 class QuizScreen extends StatefulWidget {
-  const QuizScreen({super.key, required this.cles});
+  const QuizScreen({super.key, this.cles = const [], this.mode = ModeQuiz.anglaisFrancais});
 
   final List<String> cles;
+  final ModeQuiz mode;
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
@@ -39,6 +45,44 @@ class _QuizScreenState extends State<QuizScreen> {
 
   Future<void> _preparer() async {
     final services = AppScope.of(context);
+    final questions = widget.mode == ModeQuiz.fauxAmis
+        ? await _questionsFauxAmis(services)
+        : await _questionsMots(services);
+    if (!mounted) return;
+    setState(() => _questions = questions);
+  }
+
+  Future<List<_Question>> _questionsFauxAmis(AppServices services) async {
+    List<FauxAmi> faux;
+    try {
+      faux = await services.source.fauxAmisHasard(_nombre + 2);
+    } catch (_) {
+      faux = const [];
+    }
+    if (faux.length < 3) return const [];
+    final questions = <_Question>[];
+    for (var i = 0; i < faux.length && questions.length < _nombre; i++) {
+      final f = faux[i];
+      final autres = [
+        for (var k = 1; k < faux.length; k++) faux[(i + k) % faux.length].vrai,
+      ];
+      final options = <String>{f.vrai, f.piege};
+      for (final a in autres) {
+        if (options.length < 4) options.add(a);
+      }
+      questions.add(_Question(
+        null,
+        'Que veut dire « ${f.mot} » ?',
+        f.vrai,
+        options.toList()..shuffle(),
+        'Piège : « ${f.mot} » ne veut pas dire « ${f.piege} ».',
+      ));
+    }
+    return questions;
+  }
+
+  Future<List<_Question>> _questionsMots(AppServices services) async {
+    final inverse = widget.mode == ModeQuiz.francaisAnglais;
     // D'abord les mots à réviser, puis les autres dans le désordre.
     final dues = services.user.aReviser(widget.cles);
     final autres = widget.cles.where((c) => !dues.contains(c)).toList()..shuffle();
@@ -50,11 +94,16 @@ class _QuizScreenState extends State<QuizScreen> {
       if (mot == null) continue;
       final fiche = await services.moteur.fiche(mot);
       if (fiche.equivalents.isEmpty) continue;
-      final bonne = fiche.equivalents.first.fr;
-      final connus = {for (final e in fiche.equivalents) e.fr.toLowerCase()};
+      final francais = fiche.equivalents.first.fr;
+      final bonne = inverse ? mot.mot : francais;
+      final connus = inverse
+          ? {mot.mot.toLowerCase()}
+          : {for (final e in fiche.equivalents) e.fr.toLowerCase()};
       List<String> hasard;
       try {
-        hasard = await services.source.equivalentsHasard(12);
+        hasard = inverse
+            ? await services.source.motsHasard(12)
+            : await services.source.equivalentsHasard(12);
       } catch (_) {
         hasard = const [];
       }
@@ -65,10 +114,14 @@ class _QuizScreenState extends State<QuizScreen> {
         }
       }
       if (mauvaises.isEmpty) continue;
-      questions.add(_Question(cle, mot, bonne, [bonne, ...mauvaises]..shuffle()));
+      questions.add(_Question(
+        cle,
+        inverse ? 'Comment dit-on « $francais » en anglais ?' : 'Que veut dire « ${mot.mot} » ?',
+        bonne,
+        [bonne, ...mauvaises]..shuffle(),
+      ));
     }
-    if (!mounted) return;
-    setState(() => _questions = questions);
+    return questions;
   }
 
   Future<void> _repondre(String option) async {
@@ -78,7 +131,8 @@ class _QuizScreenState extends State<QuizScreen> {
       _choix = option;
       if (juste) _score++;
     });
-    await AppScope.of(context).user.repondre(q.cle, juste);
+    final cle = q.cle;
+    if (cle != null) await AppScope.of(context).user.repondre(cle, juste);
   }
 
   void _suivante() => setState(() {
@@ -90,7 +144,13 @@ class _QuizScreenState extends State<QuizScreen> {
   Widget build(BuildContext context) {
     final questions = _questions;
     return Scaffold(
-      appBar: AppBar(title: const Text('Quiz')),
+      appBar: AppBar(
+        title: Text(switch (widget.mode) {
+          ModeQuiz.anglaisFrancais => 'Quiz',
+          ModeQuiz.francaisAnglais => 'Quiz français → anglais',
+          ModeQuiz.fauxAmis => 'Quiz des faux amis',
+        }),
+      ),
       body: questions == null
           ? const Center(child: CircularProgressIndicator())
           : questions.isEmpty
@@ -122,7 +182,7 @@ class _QuizScreenState extends State<QuizScreen> {
         const SizedBox(height: 20),
         Semantics(
           header: true,
-          child: Text('Que veut dire « ${q.mot.mot} » ?',
+          child: Text(q.intitule,
               style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
         ),
         const SizedBox(height: 16),
@@ -141,6 +201,10 @@ class _QuizScreenState extends State<QuizScreen> {
           const SizedBox(height: 12),
           Text(_choix == q.bonne ? 'Bonne réponse !' : 'Ce n\'était pas ça : « ${q.bonne} ».',
               style: theme.textTheme.titleMedium),
+          if (q.explication.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(q.explication, style: theme.textTheme.bodyMedium),
+          ],
           const SizedBox(height: 12),
           FilledButton(
             onPressed: _suivante,

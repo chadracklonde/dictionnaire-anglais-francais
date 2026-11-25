@@ -42,6 +42,12 @@ abstract class Source {
   /// Équivalents français pris au hasard : mauvaises réponses d'un quiz.
   Future<List<String>> equivalentsHasard(int nombre);
 
+  /// Mots anglais courants pris au hasard : mauvaises réponses d'un quiz.
+  Future<List<String>> motsHasard(int nombre);
+
+  /// Faux amis pris au hasard.
+  Future<List<FauxAmi>> fauxAmisHasard(int nombre);
+
   /// Faux ami, d'après le mot anglais en minuscules.
   Future<FauxAmi?> fauxAmi(String mot);
 

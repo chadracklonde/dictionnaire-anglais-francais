@@ -1,6 +1,7 @@
 import 'dart:convert';
 
-import 'package:dicoenfr_engine/dicoenfr_engine.dart' show Carte, numeroDeJour;
+import 'package:dicoenfr_engine/dicoenfr_engine.dart'
+    show Carte, meilleureSerie, motsDifficiles, numeroDeJour, serieEnCours;
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -12,7 +13,8 @@ class UserStore extends ChangeNotifier {
         historique = List.of(_prefs.getStringList('historique') ?? const []),
         notes = _decoderNotes(_prefs.getString('notes')),
         listes = _decoderListes(_prefs.getString('listes')),
-        revisions = _decoderRevisions(_prefs.getString('revisions'));
+        revisions = _decoderRevisions(_prefs.getString('revisions')),
+        activite = _decoderActivite(_prefs.getString('activite'));
 
   static const int _historiqueMax = 100;
 
@@ -43,6 +45,28 @@ class UserStore extends ChangeNotifier {
     } catch (_) {}
     return resultat;
   }
+
+  /// Activité par jour : numéro du jour → [réponses données, nouveaux mots vus].
+  final Map<int, List<int>> activite;
+
+  static Map<int, List<int>> _decoderActivite(String? brut) {
+    final resultat = <int, List<int>>{};
+    if (brut == null) return resultat;
+    try {
+      final data = jsonDecode(brut);
+      if (data is Map) {
+        data.forEach((k, v) {
+          final jour = int.tryParse('$k');
+          if (jour != null && v is List && v.length >= 2 && v[0] is int && v[1] is int) {
+            resultat[jour] = [v[0] as int, v[1] as int];
+          }
+        });
+      }
+    } catch (_) {}
+    return resultat;
+  }
+
+  static const int _joursConserves = 120;
 
   static const int _noteMax = 2000;
   static const int _nomListeMax = 60;
@@ -151,19 +175,53 @@ class UserStore extends ChangeNotifier {
 
   /// Enregistre une réponse (su ou non) pour un mot.
   Future<void> repondre(String cle, bool connu) async {
-    revisions[cle] = carteDe(cle).apresReponse(connu, numeroDeJour(DateTime.now()));
+    final jour = numeroDeJour(DateTime.now());
+    final neuve = carteDe(cle).vus == 0;
+    final jourActuel = activite.putIfAbsent(jour, () => [0, 0]);
+    jourActuel[0]++;
+    if (neuve) jourActuel[1]++;
+    if (activite.length > _joursConserves) {
+      final anciens = activite.keys.toList()..sort();
+      for (final j in anciens.take(activite.length - _joursConserves)) {
+        activite.remove(j);
+      }
+    }
+    await _prefs.setString(
+        'activite', jsonEncode({for (final e in activite.entries) '${e.key}': e.value}));
+    revisions[cle] = carteDe(cle).apresReponse(connu, jour);
     await _prefs.setString(
         'revisions', jsonEncode({for (final e in revisions.entries) e.key: e.value.versJson()}));
     notifyListeners();
   }
 
-  /// Mots à réviser aujourd'hui parmi [cles] : les plus en retard d'abord.
+  /// Mots à réviser aujourd'hui parmi [cles] : d'abord les mots déjà vus, les plus en retard en tête,
+  /// puis les nouveaux mots, dans la limite du nombre de nouveaux mots par jour.
   List<String> aReviser(Iterable<String> cles) {
     final jour = numeroDeJour(DateTime.now());
-    final dues = [for (final c in cles) if (carteDe(c).estDue(jour)) c];
+    final dues = <String>[];
+    final neuves = <String>[];
+    for (final c in cles) {
+      final carte = carteDe(c);
+      if (!carte.estDue(jour)) continue;
+      (carte.vus == 0 ? neuves : dues).add(c);
+    }
     dues.sort((a, b) => carteDe(a).prochaine.compareTo(carteDe(b).prochaine));
-    return dues;
+    final reste = nouveauxParJour - nouveauxAujourdhui;
+    return [...dues, ...neuves.take(reste < 0 ? 0 : reste)];
   }
+
+  /// Nombre de réponses données aujourd'hui.
+  int get reponsesAujourdhui => activite[numeroDeJour(DateTime.now())]?[0] ?? 0;
+
+  /// Nombre de nouveaux mots vus aujourd'hui.
+  int get nouveauxAujourdhui => activite[numeroDeJour(DateTime.now())]?[1] ?? 0;
+
+  int get serie => serieEnCours(activite.keys, numeroDeJour(DateTime.now()));
+
+  int get meilleureSerieJours => meilleureSerie(activite.keys);
+
+  /// Mots souvent ratés parmi [cles].
+  List<String> difficiles(Iterable<String> cles) => motsDifficiles(revisions, cles);
 
   /// Tous les mots qu'on peut réviser : favoris et mots des listes, sans doublon.
   List<String> motsARevoir() {
@@ -184,6 +242,7 @@ class UserStore extends ChangeNotifier {
         'notes': notes,
         'listes': listes,
         'revisions': {for (final e in revisions.entries) e.key: e.value.versJson()},
+        'activite': {for (final e in activite.entries) '${e.key}': e.value},
       });
 
   /// Fusionne une sauvegarde : les favoris et mots de listes absents sont ajoutés, les notes
@@ -242,6 +301,18 @@ class UserStore extends ChangeNotifier {
       await _prefs.setString(
           'revisions', jsonEncode({for (final e in revisions.entries) e.key: e.value.versJson()}));
     }
+    final act = data['activite'];
+    if (act is Map) {
+      act.forEach((k, v) {
+        final jour = int.tryParse('$k');
+        if (jour != null && v is List && v.length >= 2 && v[0] is int && v[1] is int) {
+          final actuel = activite[jour];
+          if (actuel == null || (v[0] as int) > actuel[0]) activite[jour] = [v[0] as int, v[1] as int];
+        }
+      });
+      await _prefs.setString(
+          'activite', jsonEncode({for (final e in activite.entries) '${e.key}': e.value}));
+    }
     await _prefs.setStringList('favoris', favoris);
     await _prefs.setString('notes', jsonEncode(notes));
     await _prefs.setString('listes', jsonEncode(listes));
@@ -259,6 +330,22 @@ class UserStore extends ChangeNotifier {
 
   String get themeMode => _prefs.getString('themeMode') ?? 'system';
   double get textScale => _prefs.getDouble('textScale') ?? 1.0;
+
+  /// Réponses visées par jour (objectif affiché sur l'onglet Réviser).
+  int get objectifJour => _prefs.getInt('objectifJour') ?? 10;
+
+  Future<void> setObjectifJour(int valeur) async {
+    await _prefs.setInt('objectifJour', valeur);
+    notifyListeners();
+  }
+
+  /// Nombre maximal de nouveaux mots proposés par jour.
+  int get nouveauxParJour => _prefs.getInt('nouveauxParJour') ?? 10;
+
+  Future<void> setNouveauxParJour(int valeur) async {
+    await _prefs.setInt('nouveauxParJour', valeur);
+    notifyListeners();
+  }
 
   bool get tutorielVu => _prefs.getBool('tutorielVu') ?? false;
 

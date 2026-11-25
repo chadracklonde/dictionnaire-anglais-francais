@@ -52,7 +52,7 @@ class Requetes(unittest.TestCase):
             "requeteMotsParRecherche", "requeteLemmesDeForme", "requeteContraction", "requeteEquivalents",
             "requeteSens", "requeteDefinitionsFr", "requeteFormes", "requeteAudio",
             "requetePrononciations", "requeteAnglaisParFrancais", "requeteSuggestionsAnglais",
-            "requeteSuggestionsFrancais", "requeteRelations", "requeteEquivalentsHasard", "requeteMotsProchesAnglais", "requeteMotsProchesFrancais", "requeteMotsParMotif",
+            "requeteSuggestionsFrancais", "requeteRelations", "requeteMotsHasard", "requeteFauxAmisHasard", "requeteEquivalentsHasard", "requeteMotsProchesAnglais", "requeteMotsProchesFrancais", "requeteMotsParMotif",
             "requeteParDefinitionAnglaise", "requeteParDefinitionFrancaise", "requeteVerbesAParticule", "requeteFauxAmi",
             "requeteIndexAnglais", "requeteChiffres", "requeteMeta"}
         self.assertEqual(set(self.sql), attendues)
@@ -130,6 +130,14 @@ class Requetes(unittest.TestCase):
             self.assertLessEqual(len(rows), 3)
             for (fr,) in rows:
                 self.assertNotIn(" ", fr)
+
+    def test_mots_et_faux_amis_au_hasard(self):
+        for _ in range(20):
+            for (mot,) in self.run_q("requeteMotsHasard", 3):
+                self.assertNotIn(" ", mot)
+        faux = self.run_q("requeteFauxAmisHasard", 100)
+        self.assertGreaterEqual(len(faux), 40)
+        self.assertEqual(len(self.run_q("requeteFauxAmisHasard", 3)), 3)
 
     def test_francais_vers_anglais(self):
         rows = self.run_q("requeteAnglaisParFrancais", "chien", 10)

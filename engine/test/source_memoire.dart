@@ -125,6 +125,17 @@ class SourceMemoire implements Source {
       ['maison', 'table', 'rouge', 'voiture'].take(nombre).toList();
 
   @override
+  Future<List<String>> motsHasard(int nombre) async =>
+      ['house', 'water', 'green', 'table'].take(nombre).toList();
+
+  @override
+  Future<List<FauxAmi>> fauxAmisHasard(int nombre) async => const [
+        FauxAmi(mot: 'actually', piege: 'actuellement', vrai: 'en fait, vraiment'),
+        FauxAmi(mot: 'library', piege: 'librairie', vrai: 'bibliothèque'),
+        FauxAmi(mot: 'journey', piege: 'journée', vrai: 'voyage, trajet'),
+      ].take(nombre).toList();
+
+  @override
   Future<List<Relation>> relations(int motId) async => relationsParMot[motId] ?? const [];
 
   @override

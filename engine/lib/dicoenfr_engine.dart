@@ -7,6 +7,7 @@ export 'src/modeles.dart';
 export 'src/moteur.dart';
 export 'src/normalisation.dart';
 export 'src/orthographe.dart';
+export 'src/progression.dart';
 export 'src/regles.dart';
 export 'src/requetes.dart';
 export 'src/revision.dart';

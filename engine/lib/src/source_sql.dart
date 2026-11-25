@@ -155,6 +155,20 @@ class SourceSql implements Source {
   }
 
   @override
+  Future<List<String>> motsHasard(int nombre) async {
+    final lignes = await _sql.requete(requeteMotsHasard, [nombre]);
+    return lignes.map((l) => _texte(l['mot'])).toList();
+  }
+
+  @override
+  Future<List<FauxAmi>> fauxAmisHasard(int nombre) async {
+    final lignes = await _sql.requete(requeteFauxAmisHasard, [nombre]);
+    return lignes
+        .map((l) => FauxAmi(mot: _texte(l['mot']), piege: _texte(l['piege']), vrai: _texte(l['vrai'])))
+        .toList();
+  }
+
+  @override
   Future<List<Relation>> relations(int motId) async {
     final lignes = await _sql.requete(requeteRelations, [motId]);
     return lignes.map((l) => Relation(_texte(l['type']), _texte(l['mot']))).toList();
