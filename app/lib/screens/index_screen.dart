@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../app.dart';
 import '../widgets/menu_mot.dart';
 import '../widgets/mise_en_page.dart';
+import 'motif_screen.dart';
 import 'result_screen.dart';
 
 /// Index alphabétique des mots anglais, par lettre, paginé par curseur.
@@ -73,7 +74,9 @@ class _IndexScreenState extends State<IndexScreen> {
     final t = texte.trim();
     if (t.isEmpty) return;
     FocusScope.of(context).unfocus();
-    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => ResultScreen(requete: t)));
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => Moteur.estMotif(t) ? MotifScreen(motif: t) : ResultScreen(requete: t),
+    ));
   }
 
   Future<void> _recommencer(String lettre, {String? debut}) async {

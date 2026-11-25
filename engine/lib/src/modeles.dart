@@ -118,6 +118,23 @@ class FauxAmi {
   final String vrai;
 }
 
+/// Mot d'écriture proche d'une faute de frappe : [recherche] est sa forme pliée.
+class MotProche {
+  const MotProche(this.mot, this.recherche, this.rang);
+
+  final String mot;
+  final String recherche;
+  final int? rang;
+}
+
+/// Un mot trouvé par une de ses définitions, avec la définition qui correspond.
+class ParDefinition {
+  const ParDefinition(this.mot, this.extrait);
+
+  final Mot mot;
+  final String extrait;
+}
+
 /// Fiche complète d'un mot anglais.
 class Fiche {
   const Fiche({

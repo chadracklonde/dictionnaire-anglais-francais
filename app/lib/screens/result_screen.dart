@@ -6,6 +6,7 @@ import '../data/libelles.dart';
 import '../data/user_store.dart';
 import '../widgets/fiche_card.dart';
 import '../widgets/mise_en_page.dart';
+import 'definition_screen.dart';
 import 'entry_screen.dart';
 
 /// Résultat d'une recherche : un onglet anglais → français, un onglet français → anglais.
@@ -44,7 +45,18 @@ class _ResultScreenState extends State<ResultScreen> {
       builder: (context, snap) {
         final r = snap.data;
         return Scaffold(
-          appBar: AppBar(title: Text(widget.requete)),
+          appBar: AppBar(
+            title: Text(widget.requete),
+            actions: [
+              IconButton(
+                tooltip: 'Chercher dans les définitions',
+                icon: const Icon(Icons.manage_search_rounded),
+                onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                  builder: (_) => DefinitionScreen(texteInitial: widget.requete),
+                )),
+              ),
+            ],
+          ),
           body: snap.hasError
               ? Center(child: Text('Erreur : ${snap.error}'))
               : r == null
@@ -222,6 +234,17 @@ class _Vide extends StatelessWidget {
           ),
         ] else
           const Text('Vérifiez l\'orthographe ou essayez une autre forme du mot.'),
+        const SizedBox(height: 16),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: OutlinedButton.icon(
+            icon: const Icon(Icons.manage_search_rounded),
+            label: const Text('Chercher dans les définitions'),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => DefinitionScreen(texteInitial: resultat.requete),
+            )),
+          ),
+        ),
       ],
     );
   }

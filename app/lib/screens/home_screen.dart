@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:dicoenfr_engine/dicoenfr_engine.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../app.dart';
 import '../data/libelles.dart';
@@ -8,6 +10,7 @@ import '../data/mots_du_jour.dart';
 import '../data/user_store.dart';
 import 'about_screen.dart';
 import 'entry_screen.dart';
+import 'motif_screen.dart';
 import 'result_screen.dart';
 import 'settings_screen.dart';
 import 'tutorial_screen.dart';
@@ -23,6 +26,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _controleur = TextEditingController();
+  final _focus = FocusNode();
   Timer? _delai;
   List<String> _suggestions = const [];
 
@@ -38,6 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _delai?.cancel();
+    _focus.dispose();
     _controleur.dispose();
     super.dispose();
   }
@@ -57,7 +62,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final t = texte.trim();
     if (t.isEmpty) return;
     FocusScope.of(context).unfocus();
-    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => ResultScreen(requete: t)));
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => Moteur.estMotif(t) ? MotifScreen(motif: t) : ResultScreen(requete: t),
+    ));
   }
 
   void _ouvrir(Widget ecran) =>
@@ -69,7 +76,12 @@ class _HomeScreenState extends State<HomeScreen> {
     final user = AppScope.of(context).user;
     return ListenableBuilder(
       listenable: user,
-      builder: (context, _) => Scaffold(
+      builder: (context, _) => CallbackShortcuts(
+        bindings: {
+          const SingleActivator(LogicalKeyboardKey.keyK, control: true): _focus.requestFocus,
+          const SingleActivator(LogicalKeyboardKey.keyK, meta: true): _focus.requestFocus,
+        },
+        child: Scaffold(
       appBar: AppBar(
         title: const Text('Anglais Français'),
         actions: [
@@ -90,11 +102,12 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           TextField(
             controller: _controleur,
+            focusNode: _focus,
             textInputAction: TextInputAction.search,
             autocorrect: false,
             enableSuggestions: false,
             decoration: InputDecoration(
-              hintText: 'Un mot anglais ou français',
+              hintText: 'Un mot anglais ou français (inter* pour un début)',
               prefixIcon: const Icon(Icons.search_rounded),
               suffixIcon: _controleur.text.isEmpty
                   ? null
@@ -169,7 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     ),
-    );
+    ));
   }
 
   Future<void> _ouvrirCle(String cle) async {

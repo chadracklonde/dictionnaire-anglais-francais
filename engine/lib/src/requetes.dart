@@ -81,6 +81,52 @@ const String requeteFauxAmi = '''
 SELECT mot, piege, vrai FROM faux_amis WHERE mot = ?
 ''';
 
+/// Mots anglais d'écriture proche (correction d'une faute de frappe). Paramètres : borne basse et
+/// borne haute de la première lettre (texte plié), longueur minimale, longueur maximale, limite.
+const String requeteMotsProchesAnglais = '''
+SELECT mot, mot_recherche AS recherche, MIN(rang) AS rang FROM mots
+WHERE mot_recherche >= ? AND mot_recherche < ? AND length(mot_recherche) BETWEEN ? AND ?
+GROUP BY mot_recherche
+ORDER BY rang IS NULL, rang
+LIMIT ?
+''';
+
+/// Mêmes paramètres, pour les équivalents français.
+const String requeteMotsProchesFrancais = '''
+SELECT fr AS mot, fr_recherche AS recherche, NULL AS rang FROM traductions
+WHERE fr_recherche >= ? AND fr_recherche < ? AND length(fr_recherche) BETWEEN ? AND ?
+GROUP BY fr_recherche
+LIMIT ?
+''';
+
+/// Recherche par motif (inter*, c?t). Paramètres : borne basse et haute du début fixe du motif,
+/// motif GLOB, limite.
+const String requeteMotsParMotif = '''
+SELECT mot, MIN(rang) AS rang FROM mots
+WHERE mot_recherche >= ? AND mot_recherche < ? AND mot_recherche GLOB ?
+GROUP BY mot_recherche
+ORDER BY rang IS NULL, rang, mot_recherche
+LIMIT ?
+''';
+
+/// Recherche dans les définitions anglaises. Paramètres : trois motifs LIKE (« % » si inutilisé), limite.
+const String requeteParDefinitionAnglaise = '''
+SELECT m.id, m.mot, m.nature, m.rang, s.definition AS extrait
+FROM sens s JOIN mots m ON m.id = s.mot_id
+WHERE s.definition LIKE ? AND s.definition LIKE ? AND s.definition LIKE ?
+ORDER BY m.rang IS NULL, m.rang, m.id
+LIMIT ?
+''';
+
+/// Recherche dans les définitions françaises. Mêmes paramètres.
+const String requeteParDefinitionFrancaise = '''
+SELECT m.id, m.mot, m.nature, m.rang, d.texte AS extrait
+FROM definitions_fr d JOIN mots m ON m.id = d.mot_id
+WHERE d.texte LIKE ? AND d.texte LIKE ? AND d.texte LIKE ?
+ORDER BY m.rang IS NULL, m.rang, m.id
+LIMIT ?
+''';
+
 /// Français → anglais. Paramètres : texte plié, nombre maximal de lignes.
 const String requeteAnglaisParFrancais = '''
 SELECT m.id, m.mot, m.nature, m.rang, t.fr, t.etiquette, t.genre, t.source

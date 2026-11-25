@@ -6,6 +6,7 @@ export 'src/conjugaison.dart';
 export 'src/modeles.dart';
 export 'src/moteur.dart';
 export 'src/normalisation.dart';
+export 'src/orthographe.dart';
 export 'src/regles.dart';
 export 'src/requetes.dart';
 export 'src/source.dart';

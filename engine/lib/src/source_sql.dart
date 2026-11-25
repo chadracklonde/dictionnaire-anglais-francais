@@ -114,6 +114,41 @@ class SourceSql implements Source {
   }
 
   @override
+  Future<List<MotProche>> motsProches(String initiale, int lmin, int lmax,
+      {required bool francais, required int limite}) async {
+    final lignes = await _sql.requete(
+      francais ? requeteMotsProchesFrancais : requeteMotsProchesAnglais,
+      [initiale, borneSuperieure(initiale), lmin, lmax, limite],
+    );
+    return lignes
+        .map((l) => MotProche(_texte(l['mot']), _texte(l['recherche']), _entierOuNull(l['rang'])))
+        .toList();
+  }
+
+  @override
+  Future<List<String>> motsParMotif(String debut, String glob, int limite) async {
+    final lignes = await _sql.requete(
+      requeteMotsParMotif,
+      [debut, borneSuperieure(debut), glob, limite],
+    );
+    return lignes.map((l) => _texte(l['mot'])).toList();
+  }
+
+  @override
+  Future<List<ParDefinition>> parDefinition(List<String> termes,
+      {required bool francais, required int limite}) async {
+    final motifs = [for (final t in termes.take(3)) '%$t%'];
+    while (motifs.length < 3) {
+      motifs.add('%');
+    }
+    final lignes = await _sql.requete(
+      francais ? requeteParDefinitionFrancaise : requeteParDefinitionAnglaise,
+      [...motifs, limite],
+    );
+    return lignes.map((l) => ParDefinition(_mot(l), _texte(l['extrait']))).toList();
+  }
+
+  @override
   Future<List<Relation>> relations(int motId) async {
     final lignes = await _sql.requete(requeteRelations, [motId]);
     return lignes.map((l) => Relation(_texte(l['type']), _texte(l['mot']))).toList();

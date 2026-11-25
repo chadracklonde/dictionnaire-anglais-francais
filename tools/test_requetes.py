@@ -52,7 +52,8 @@ class Requetes(unittest.TestCase):
             "requeteMotsParRecherche", "requeteLemmesDeForme", "requeteContraction", "requeteEquivalents",
             "requeteSens", "requeteDefinitionsFr", "requeteFormes", "requeteAudio",
             "requetePrononciations", "requeteAnglaisParFrancais", "requeteSuggestionsAnglais",
-            "requeteSuggestionsFrancais", "requeteRelations", "requeteVerbesAParticule", "requeteFauxAmi",
+            "requeteSuggestionsFrancais", "requeteRelations", "requeteMotsProchesAnglais", "requeteMotsProchesFrancais", "requeteMotsParMotif",
+            "requeteParDefinitionAnglaise", "requeteParDefinitionFrancaise", "requeteVerbesAParticule", "requeteFauxAmi",
             "requeteIndexAnglais", "requeteChiffres", "requeteMeta"}
         self.assertEqual(set(self.sql), attendues)
         for nom, sql in self.sql.items():
@@ -101,6 +102,27 @@ class Requetes(unittest.TestCase):
         faux = self.run_q("requeteFauxAmi", "actually")
         self.assertEqual(faux[0][1], "actuellement")
         self.assertEqual(self.run_q("requeteFauxAmi", "dog"), [])
+
+    def test_mots_proches_motif_definition(self):
+        borne = "d" + "\uffff"
+        proches = self.run_q("requeteMotsProchesAnglais", "d", borne, 2, 4, 100)
+        self.assertIn("dog", [r[0] for r in proches])
+        self.assertEqual(self.run_q("requeteMotsProchesAnglais", "d", borne, 9, 12, 100), [])
+        fr = self.run_q("requeteMotsProchesFrancais", "c", "c\uffff", 3, 8, 100)
+        self.assertIn("chien", [r[0] for r in fr])
+        motif = self.run_q("requeteMotsParMotif", "d", borne, "d*", 10)
+        self.assertEqual([r[0] for r in motif], ["dog"])
+        self.assertEqual([r[0] for r in self.run_q("requeteMotsParMotif", "", "\uffff", "d?g", 10)], ["dog"])
+        self.assertEqual(self.run_q("requeteMotsParMotif", "", "\uffff", "zz*", 10), [])
+        # un début fixe est bien servi par l'index de la forme de recherche
+        plan = " ".join(str(r) for r in self.conn.execute(
+            "EXPLAIN QUERY PLAN " + self.sql["requeteMotsParMotif"], ("d", borne, "d*", 10)))
+        self.assertIn("ix_mots_recherche", plan)
+        defs = self.run_q("requeteParDefinitionAnglaise", "%domesticated%", "%animal%", "%", 5)
+        self.assertEqual([r[1] for r in defs], ["dog"])
+        self.assertEqual(self.run_q("requeteParDefinitionAnglaise", "%domesticated%", "%zzz%", "%", 5), [])
+        defs_fr = self.run_q("requeteParDefinitionFrancaise", "%aller%", "%", "%", 5)
+        self.assertEqual([r[1] for r in defs_fr], ["go"])
 
     def test_francais_vers_anglais(self):
         rows = self.run_q("requeteAnglaisParFrancais", "chien", 10)
