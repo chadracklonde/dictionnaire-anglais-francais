@@ -24,6 +24,7 @@ import re
 import sqlite3
 import sys
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -38,31 +39,37 @@ LOT_API = 50
 
 # ---------------------------------------------------------------- réseau
 
-def http_json(url, tentatives=4, pause=2.0):
-    """GET d'une réponse JSON, avec nouvelles tentatives."""
+def _lire_url(url, delai, tentatives, pause):
+    """GET avec nouvelles tentatives. 404 : abandon tout de suite ; 429 et 5xx : attente (Retry-After)."""
     derniere = None
     for n in range(tentatives):
         try:
             req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-            with urllib.request.urlopen(req, timeout=60) as r:
-                return json.loads(r.read().decode("utf-8"))
-        except Exception as e:  # réseau, 429, 5xx
-            derniere = e
-            time.sleep(pause * (n + 1))
-    raise RuntimeError("échec de %s : %s" % (url[:120], derniere))
-
-
-def http_octets(url, tentatives=4, pause=2.0):
-    derniere = None
-    for n in range(tentatives):
-        try:
-            req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-            with urllib.request.urlopen(req, timeout=120) as r:
+            with urllib.request.urlopen(req, timeout=delai) as r:
                 return r.read()
-        except Exception as e:
-            derniere = e
-            time.sleep(pause * (n + 1))
-    raise RuntimeError("échec de %s : %s" % (url[:120], derniere))
+        except urllib.error.HTTPError as e:
+            derniere = "HTTP %d" % e.code
+            if e.code in (400, 403, 404, 410):
+                break
+            try:
+                attente = min(float(e.headers.get("Retry-After", "")), 120.0)
+            except (TypeError, ValueError):
+                attente = pause * (2 ** n)
+            time.sleep(max(attente, pause))
+        except Exception as e:  # réseau, délai dépassé
+            derniere = type(e).__name__
+            time.sleep(pause * (2 ** n))
+    raise RuntimeError("%s (%s)" % (derniere, url.split("?")[0][-60:]))
+
+
+def http_json(url, tentatives=5, pause=2.0):
+    """GET d'une réponse JSON."""
+    return json.loads(_lire_url(url, 60, tentatives, pause).decode("utf-8"))
+
+
+def http_octets(url, tentatives=5, pause=2.0):
+    """GET d'un fichier ; les paramètres de suivi ajoutés par l'API sont retirés."""
+    return _lire_url(url.split("?")[0], 120, tentatives, pause)
 
 
 # ---------------------------------------------------------------- sélection
@@ -188,15 +195,23 @@ def planifier(gardes, rang_coeur=RANG_COEUR, taille_pack_mo=TAILLE_PACK_MO):
     return packs
 
 
-def telecharger(packs, sortie, http=http_octets, workers=4, pause=0.05):
-    """Écrit chaque fichier dans sortie/<pack>/<nom>. Renvoie les fichiers non téléchargés."""
+def telecharger(packs, sortie, http=http_octets, workers=2, pause=0.3, budget_s=None, journal=print):
+    """Écrit chaque fichier dans sortie/<pack>/<nom>. Renvoie les fichiers non téléchargés.
+
+    Le cœur est téléchargé d'abord. Passé `budget_s` secondes, les fichiers restants sont
+    abandonnés (ils sont les moins courants) pour que le travail se termine et soit publié.
+    """
     taches = [(g, os.path.join(sortie, "audio_" + p)) for p, liste in packs.items() for g in liste]
     for _, dossier in taches:
         os.makedirs(dossier, exist_ok=True)
-    echecs = []
+    debut = time.monotonic()
+    fin = debut + budget_s if budget_s else None
+    compte = {"fait": 0}
 
     def une(tache):
         g, dossier = tache
+        if fin is not None and time.monotonic() > fin:
+            return (g["fichier"], "temps écoulé")
         try:
             donnees = http(g["url"])
             if not donnees or abs(len(donnees) - g["taille"]) > 64:
@@ -207,7 +222,12 @@ def telecharger(packs, sortie, http=http_octets, workers=4, pause=0.05):
             return None
         except Exception as e:
             return (g["fichier"], str(e)[:120])
+        finally:
+            compte["fait"] += 1
+            if journal and compte["fait"] % 500 == 0:
+                journal("audio : %d / %d fichiers, %.0f s" % (compte["fait"], len(taches), time.monotonic() - debut))
 
+    echecs = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as ex:
         for resultat in ex.map(une, taches):
             if resultat:
@@ -246,6 +266,8 @@ def rapport(candidats, refus, packs, echecs, index):
     licences = collections.Counter(f["l"] for f in index["fichiers"].values())
     lignes += ["", "Licences : " + ", ".join("%s %d" % kv for kv in licences.most_common()), ""]
     if echecs:
+        motifs = collections.Counter(re.sub(r"\s*\(.*\)$", "", e[1]).strip() for e in echecs)
+        lignes += ["Motifs d'échec : " + ", ".join("%s %d" % kv for kv in motifs.most_common(6)), ""]
         lignes += ["Exemples d'échecs : " + "; ".join("%s (%s)" % e for e in echecs[:5]), ""]
     return "\n".join(lignes)
 
@@ -253,7 +275,7 @@ def rapport(candidats, refus, packs, echecs, index):
 # ---------------------------------------------------------------- programme
 
 def executer(db, sortie, rang_coeur=RANG_COEUR, taille_pack_mo=TAILLE_PACK_MO, limite=None,
-             workers=4, http_meta=http_json, http_fichier=http_octets, pause=0.05):
+             workers=2, http_meta=http_json, http_fichier=http_octets, pause=0.3, budget_s=None):
     conn = sqlite3.connect(db)
     candidats = selectionner(conn)
     conn.close()
@@ -263,7 +285,7 @@ def executer(db, sortie, rang_coeur=RANG_COEUR, taille_pack_mo=TAILLE_PACK_MO, l
     gardes, refus = filtrer(candidats, infos)
     packs = planifier(gardes, rang_coeur, taille_pack_mo)
     os.makedirs(sortie, exist_ok=True)
-    echecs = telecharger(packs, sortie, http=http_fichier, workers=workers, pause=pause)
+    echecs = telecharger(packs, sortie, http=http_fichier, workers=workers, pause=pause, budget_s=budget_s)
     index = construire_index(packs, echecs)
     with open(os.path.join(sortie, "audio_index.json"), "w", encoding="utf-8") as f:
         json.dump(index, f, ensure_ascii=False, separators=(",", ":"))
@@ -280,10 +302,14 @@ def main(argv=None):
     p.add_argument("--rang-coeur", type=int, default=RANG_COEUR)
     p.add_argument("--taille-pack-mo", type=int, default=TAILLE_PACK_MO)
     p.add_argument("--limite", type=int, default=None, help="essai : seulement les N mots les plus courants")
-    p.add_argument("--workers", type=int, default=4)
+    p.add_argument("--workers", type=int, default=2)
+    p.add_argument("--pause", type=float, default=0.3, help="secondes entre deux fichiers, par fil")
+    p.add_argument("--budget-minutes", type=int, default=None,
+                   help="durée maximale des téléchargements ; le reste est abandonné")
     args = p.parse_args(argv)
     index, texte = executer(args.db, args.sortie, args.rang_coeur, args.taille_pack_mo, args.limite,
-                            args.workers)
+                            args.workers, pause=args.pause,
+                            budget_s=args.budget_minutes * 60 if args.budget_minutes else None)
     print(texte)
     return 0 if index["fichiers"] else 1
 

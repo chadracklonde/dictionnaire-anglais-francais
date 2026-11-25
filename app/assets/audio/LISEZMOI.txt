@@ -1,0 +1,3 @@
+Dossier rempli par la CI quand les enregistrements sont inclus (build.yml, option « audio ») :
+audio_index.json y est copié (auteur et licence de chaque enregistrement, pack qui le contient).
+Les fichiers audio eux-mêmes ne sont pas ici : ils sont livrés par Play Asset Delivery.

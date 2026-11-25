@@ -120,6 +120,17 @@ class Audio(unittest.TestCase):
         index = a.construire_index(packs, echecs)
         self.assertEqual(index["fichiers"], {})
 
+    def test_budget_de_temps_depasse(self):
+        gardes = [{"fichier": "a.ogg", "mot": "a", "rang": 1, "taille": 3, "url": "u", "auteur": "",
+                   "licence": "CC0", "licence_url": "", "page": ""}]
+        packs = a.planifier(gardes)
+        sortie = os.path.join(self.tmp.name, "budget")
+        appels = []
+        echecs = a.telecharger(packs, sortie, http=lambda u: appels.append(u) or b"abc",
+                               workers=1, pause=0, budget_s=-1, journal=None)
+        self.assertEqual(echecs, [("a.ogg", "temps écoulé")])
+        self.assertEqual(appels, [])
+
     def test_noms_locaux(self):
         self.assertEqual(a.nom_local("LL-Q1860 (eng)-Someone-hello.wav"), "LL-Q1860__eng_-Someone-hello.wav")
         self.assertEqual(a.nom_local("En-us-go.ogg"), "En-us-go.ogg")

@@ -82,6 +82,12 @@ class _AboutScreenState extends State<AboutScreen> {
           const Text(
             'Extraction : projet wiktextract / kaikki.org. Fréquences des mots : wordfreq.',
           ),
+          const SizedBox(height: 8),
+          const Text(
+            'Les voix enregistrées viennent de contributeurs du Wiktionnaire (Wikimedia '
+            'Commons), sous licence CC BY, CC BY-SA ou domaine public. L\'auteur et la licence '
+            'de chaque enregistrement s\'affichent sous la fiche du mot, après l\'écoute.',
+          ),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,

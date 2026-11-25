@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../app.dart';
 import '../widgets/mise_en_page.dart';
+import '../widgets/packs_audio.dart';
 import 'tutorial_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -55,6 +56,7 @@ class SettingsScreen extends StatelessWidget {
             'La prononciation utilise la synthèse vocale de votre téléphone.',
             style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
+          const SectionPacksAudio(),
           const SizedBox(height: 24),
           Text('Sauvegarde', style: theme.textTheme.titleMedium),
           const SizedBox(height: 4),

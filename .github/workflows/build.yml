@@ -5,6 +5,13 @@ name: Phase 3 - Compiler l'application
 
 on:
   workflow_dispatch:
+    inputs:
+      audio:
+        description: "Inclure les packs audio de la release audio-us (Play Asset Delivery, AAB seulement)"
+        required: true
+        type: choice
+        default: "non"
+        options: ["non", "oui"]
 
 jobs:
   tests:
@@ -113,6 +120,16 @@ jobs:
               open(grv,'w',encoding='utf-8').write(s)
           PY
           echo "::notice::SIGNATURE $(grep -n 'signingConfig\|Properties\|key.properties' android/app/build.gradle* | tr '\n' '|' | cut -c1-900)"
+      - name: Packs audio (Play Asset Delivery)
+        if: inputs.audio == 'oui'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/audio
+          gh release download audio-us -D /tmp/audio
+          ls -l /tmp/audio
+          cp /tmp/audio/audio_index.json app/assets/audio/audio_index.json
+          python3 -I tools/android_audio.py --android app/android --zips /tmp/audio
       - name: Analyse
         working-directory: app
         run: |
@@ -128,6 +145,11 @@ jobs:
         run: |
           flutter build appbundle --release > aab.txt 2>&1 || { echo "::error::AAB $(grep -iE 'error|wrong|exception|keystore|signing' -A1 aab.txt | head -14 | tr '\n' '|' | cut -c1-1500)"; exit 1; }
           ls -l build/app/outputs/bundle/release/app-release.aab
+      - name: Autorisations de l'application
+        run: |
+          aapt2=$(ls -d "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -1)
+          perms=$("$aapt2" dump permissions app/build/app/outputs/flutter-apk/app-release.apk | tr '\n' '|')
+          echo "::notice::PERMISSIONS $perms"
       - uses: actions/upload-artifact@v4
         with:
           name: dictionnaire-anglais-francais-android

@@ -28,4 +28,5 @@ flutter:
   uses-material-design: true
   assets:
     - assets/db/
+    - assets/audio/
     - assets/icon/book.png

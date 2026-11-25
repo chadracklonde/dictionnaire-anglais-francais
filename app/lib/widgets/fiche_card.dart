@@ -4,6 +4,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../app.dart';
+import '../data/audio_index.dart';
+import '../data/audio_lecture.dart';
 import '../data/libelles.dart';
 import '../data/speech.dart';
 import '../data/user_store.dart';
@@ -25,10 +27,19 @@ class _FicheCardState extends State<FicheCard> {
   static const int _equivalentsVisibles = 8;
   bool _tousLesEquivalents = false;
   bool _definitions = false;
+  EntreeAudio? _credit;
 
   Future<void> _lire(BuildContext context) async {
     final services = AppScope.of(context);
     final messenger = ScaffoldMessenger.of(context);
+    if (services.user.accent == 'us') {
+      // Les enregistrements sont américains ; pour l'accent britannique, la voix du téléphone.
+      final entree = await LectureAudio.lire(widget.fiche);
+      if (mounted) setState(() => _credit = entree);
+      if (entree != null) return;
+    } else if (_credit != null) {
+      setState(() => _credit = null);
+    }
     final ok = await speech.speak(widget.fiche.mot.mot, accent: services.user.accent);
     if (!ok && mounted) {
       messenger.showSnackBar(const SnackBar(
@@ -199,6 +210,25 @@ class _FicheCardState extends State<FicheCard> {
                 child: Text(
                   [if (us.isNotEmpty) 'US $us', if (uk.isNotEmpty) 'UK $uk'].join('   '),
                   style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+              ),
+            if (_credit != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: InkWell(
+                  onTap: () {
+                    final url = _credit!.licenceUrl.isNotEmpty ? _credit!.licenceUrl : _credit!.page;
+                    if (url.startsWith('https://')) {
+                      launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                    }
+                  },
+                  child: Text(
+                    _credit!.credit,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
                 ),
               ),
             const SizedBox(height: 6),

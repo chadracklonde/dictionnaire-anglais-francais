@@ -148,7 +148,7 @@ jobs:
       - name: Télécharger et découper l'audio
         run: |
           mkdir -p audio
-          args=(--db base.db --sortie audio --workers 4)
+          args=(--db base.db --sortie audio --workers 2 --pause 0.3 --budget-minutes 290)
           [ "$MODE" = "essai" ] && args+=(--limite 300 --rang-coeur 150)
           python3 -I tools/audio_us.py "${args[@]}" | tee audio/rapport_console.txt || true
           test -f audio/audio_index.json || { echo "::error title=AUDIO aucun fichier retenu::voir le rapport"; exit 1; }
