@@ -232,6 +232,11 @@ def telecharger(packs, sortie, http=http_octets, workers=2, pause=0.3, budget_s=
         for resultat in ex.map(une, taches):
             if resultat:
                 echecs.append(resultat)
+    for dossier in {d for _, d in taches}:
+        try:
+            os.rmdir(dossier)  # ne réussit que si le dossier est vide
+        except OSError:
+            pass
     return echecs
 
 
@@ -240,6 +245,8 @@ def construire_index(packs, echecs):
     index = {"version": 1, "accent": "us", "packs": {}, "fichiers": {}}
     for pack, liste in packs.items():
         bons = [g for g in liste if g["fichier"] not in perdus]
+        if not bons:
+            continue  # un pack dont rien n'a été téléchargé n'existe pas
         index["packs"]["audio_" + pack] = {
             "fichiers": len(bons),
             "octets": sum(g["taille"] for g in bons),
@@ -274,11 +281,13 @@ def rapport(candidats, refus, packs, echecs, index):
 
 # ---------------------------------------------------------------- programme
 
-def executer(db, sortie, rang_coeur=RANG_COEUR, taille_pack_mo=TAILLE_PACK_MO, limite=None,
+def executer(db, sortie, rang_coeur=RANG_COEUR, taille_pack_mo=TAILLE_PACK_MO, limite=None, rang_max=None,
              workers=2, http_meta=http_json, http_fichier=http_octets, pause=0.3, budget_s=None):
     conn = sqlite3.connect(db)
     candidats = selectionner(conn)
     conn.close()
+    if rang_max:  # les mots plus rares (ou sans rang) restent sans enregistrement
+        candidats = [c for c in candidats if c["rang"] is not None and c["rang"] <= rang_max]
     if limite:
         candidats = candidats[:limite]
     infos = recuperer_metadonnees([c["fichier"] for c in candidats], http=http_meta)
@@ -302,13 +311,15 @@ def main(argv=None):
     p.add_argument("--rang-coeur", type=int, default=RANG_COEUR)
     p.add_argument("--taille-pack-mo", type=int, default=TAILLE_PACK_MO)
     p.add_argument("--limite", type=int, default=None, help="essai : seulement les N mots les plus courants")
+    p.add_argument("--rang-max", type=int, default=None,
+                   help="ne garder que les mots dont le rang de fréquence est au plus celui-ci")
     p.add_argument("--workers", type=int, default=2)
     p.add_argument("--pause", type=float, default=0.3, help="secondes entre deux fichiers, par fil")
     p.add_argument("--budget-minutes", type=int, default=None,
                    help="durée maximale des téléchargements ; le reste est abandonné")
     args = p.parse_args(argv)
     index, texte = executer(args.db, args.sortie, args.rang_coeur, args.taille_pack_mo, args.limite,
-                            args.workers, pause=args.pause,
+                            args.rang_max, args.workers, pause=args.pause,
                             budget_s=args.budget_minutes * 60 if args.budget_minutes else None)
     print(texte)
     return 0 if index["fichiers"] else 1

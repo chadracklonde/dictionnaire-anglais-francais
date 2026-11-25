@@ -131,6 +131,42 @@ class Audio(unittest.TestCase):
         self.assertEqual(echecs, [("a.ogg", "temps écoulé")])
         self.assertEqual(appels, [])
 
+    def test_pack_vide_absent_de_l_index_et_du_disque(self):
+        gardes = [{"fichier": "c.ogg", "mot": "c", "rang": 1, "taille": 3, "url": "u", "auteur": "",
+                   "licence": "CC0", "licence_url": "", "page": ""},
+                  {"fichier": "e.ogg", "mot": "e", "rang": 99999, "taille": 3, "url": "u", "auteur": "",
+                   "licence": "CC0", "licence_url": "", "page": ""}]
+        packs = a.planifier(gardes, rang_coeur=10)
+        sortie = os.path.join(self.tmp.name, "videpack")
+
+        def un_seul(url):
+            return b"abc"
+        # le deuxième fichier n'est pas téléchargé : budget épuisé dès le départ pour lui seul
+        etat = {"n": 0}
+
+        def http(url):
+            etat["n"] += 1
+            if etat["n"] > 1:
+                raise RuntimeError("503")
+            return b"abc"
+        echecs = a.telecharger(packs, sortie, http=http, workers=1, pause=0, journal=None)
+        self.assertEqual(len(echecs), 1)
+        index = a.construire_index(packs, echecs)
+        self.assertEqual(list(index["packs"]), ["audio_us_core"])  # pas audio_us_1
+        self.assertTrue(os.path.isdir(os.path.join(sortie, "audio_us_core")))
+        self.assertFalse(os.path.exists(os.path.join(sortie, "audio_us_1")))
+
+    def test_rang_max(self):
+        octets = b"x" * 10
+        http_meta = faux_commons({
+            "File:En-us-go.ogg": info(10, "CC0"),
+            "File:En-us-hello.ogg": info(10, "CC0"),
+        })
+        sortie = os.path.join(self.tmp.name, "rangmax")
+        index, _ = a.executer(self.db, sortie, rang_coeur=2, rang_max=2, http_meta=http_meta,
+                              http_fichier=lambda url: octets, pause=0, workers=1)
+        self.assertEqual(list(index["fichiers"]), ["En-us-go.ogg"])  # hello (rang 3) écarté
+
     def test_noms_locaux(self):
         self.assertEqual(a.nom_local("LL-Q1860 (eng)-Someone-hello.wav"), "LL-Q1860__eng_-Someone-hello.wav")
         self.assertEqual(a.nom_local("En-us-go.ogg"), "En-us-go.ogg")

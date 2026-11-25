@@ -131,7 +131,7 @@ jobs:
     needs: base
     if: inputs.audio != 'non'
     runs-on: ubuntu-latest
-    timeout-minutes: 350
+    timeout-minutes: 355
     env:
       MODE: ${{ inputs.audio }}
     steps:
@@ -148,8 +148,9 @@ jobs:
       - name: Télécharger et découper l'audio
         run: |
           mkdir -p audio
-          args=(--db base.db --sortie audio --workers 2 --pause 0.3 --budget-minutes 290)
-          [ "$MODE" = "essai" ] && args+=(--limite 300 --rang-coeur 150)
+          args=(--db base.db --sortie audio --workers 2 --pause 0.3 --budget-minutes 320 --rang-max 30000)
+          # essai : 300 mots, petits packs et budget très court, pour exercer aussi les packs vides
+          [ "$MODE" = "essai" ] && args=(--db base.db --sortie audio --workers 2 --pause 0.3 --limite 300 --rang-coeur 150 --taille-pack-mo 1 --budget-minutes 2)
           python3 -I tools/audio_us.py "${args[@]}" | tee audio/rapport_console.txt || true
           test -f audio/audio_index.json || { echo "::error title=AUDIO aucun fichier retenu::voir le rapport"; exit 1; }
           python3 -I - <<'PY'
@@ -160,11 +161,23 @@ jobs:
           PY
           du -sh audio/audio_* | head -20
 
+      # Les fichiers téléchargés sont gardés même si la suite échoue : plusieurs heures de travail.
+      - name: Garder les fichiers téléchargés
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audio-brut
+          path: audio
+          retention-days: 3
+          compression-level: 0
+
       - name: Compresser les packs
         run: |
           cd audio
           for d in audio_us_*/; do
             nom="${d%/}"
+            # un dossier vide ferait échouer zip (code 12)
+            [ -n "$(ls -A "$nom")" ] || { echo "pack $nom vide, ignoré"; continue; }
             (cd "$nom" && zip -q -0 -r "../$nom.zip" .)
           done
           ls -l *.zip audio_index.json
