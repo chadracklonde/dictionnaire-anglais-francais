@@ -27,6 +27,12 @@ on:
         description: "Publier la base dans la release base-donnees (mettre non pour un essai)"
         required: true
         default: "oui"
+      audio:
+        description: "Audio américain (Wikimedia Commons) : non, essai (300 mots) ou complet. Publié dans la release audio-us"
+        required: true
+        type: choice
+        default: "non"
+        options: ["non", "essai", "complet"]
 
 permissions:
   contents: write
@@ -106,5 +112,73 @@ jobs:
           gh release upload base-donnees --clobber \
             dictionnaire-en-fr.db.gz resultats/rapport_base.md resultats/rapport_base.json
 
+      - name: Garder la base pour l'audio
+        if: inputs.audio != 'non'
+        uses: actions/upload-artifact@v4
+        with:
+          name: base-pour-audio
+          path: base.db
+          retention-days: 1
+          compression-level: 0
+
       - name: Échouer si le rapport est bloquant
         run: python3 -I tools/construire_base.py rapport --db base.db --frequence frequence.txt --strict > /dev/null
+
+  # Audio américain : choisit un enregistrement par mot, relève auteur et licence sur Wikimedia
+  # Commons, télécharge, découpe en packs (cœur livré avec l'application + packs facultatifs) et
+  # publie dans la release « audio-us ». Voir tools/audio_us.py.
+  audio:
+    needs: base
+    if: inputs.audio != 'non'
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      MODE: ${{ inputs.audio }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: base-pour-audio
+
+      - name: Télécharger et découper l'audio
+        run: |
+          mkdir -p audio
+          args=(--db base.db --sortie audio --workers 4)
+          [ "$MODE" = "essai" ] && args+=(--limite 300 --rang-coeur 150)
+          python3 -I tools/audio_us.py "${args[@]}" | tee audio/rapport_console.txt || true
+          test -f audio/audio_index.json || { echo "::error title=AUDIO aucun fichier retenu::voir le rapport"; exit 1; }
+          python3 -I - <<'PY'
+          import re
+          texte = open("audio/rapport_audio.md", encoding="utf-8").read()
+          texte = texte.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+          print("::notice::RAPPORT-AUDIO " + texte)
+          PY
+          du -sh audio/audio_* | head -20
+
+      - name: Compresser les packs
+        run: |
+          cd audio
+          for d in audio_us_*/; do
+            nom="${d%/}"
+            (cd "$nom" && zip -q -0 -r "../$nom.zip" .)
+          done
+          ls -l *.zip audio_index.json
+
+      - name: Publier dans la release audio-us
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd audio
+          for essai in 1 2 3 4; do
+            gh release view audio-us >/dev/null 2>&1 \
+              || gh release create audio-us --prerelease --title "Audio américain" \
+                   --notes "Enregistrements du Wiktionnaire (Wikimedia Commons), auteurs et licences dans audio_index.json. Produits par data.yml."
+            if gh release upload audio-us --clobber *.zip audio_index.json rapport_audio.md; then exit 0; fi
+            echo "tentative $essai échouée, nouvel essai dans 30 s"; sleep 30
+          done
+          exit 1
