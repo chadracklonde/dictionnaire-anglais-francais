@@ -3,7 +3,7 @@
 {"word": "went", "lang_code": "en", "pos": "verb", "senses": [{"glosses": ["simple past tense of go"], "form_of": [{"word": "go"}], "tags": ["form-of", "past"]}]}
 {"word": "gone", "lang_code": "en", "pos": "verb", "senses": [{"glosses": ["past participle of go"], "form_of": [{"word": "go"}]}]}
 {"word": "hello", "lang_code": "en", "pos": "intj", "senses": [{"glosses": ["A greeting."]}], "translations": [{"lang_code": "fr", "word": "bonjour"}, {"lang_code": "fr", "word": "salut", "sense": "informal"}], "sounds": [{"audio": "En-uk-hello.ogg", "tags": ["Received-Pronunciation"]}, {"audio": "En-us-hello.ogg", "tags": ["General-American"]}, {"audio": "LL-Q1860 (eng)-Someone-hello.wav"}]}
-{"word": "dog", "lang_code": "en", "pos": "noun", "senses": [{"glosses": ["A domesticated animal."]}], "translations": [{"code": "fr", "word": "chien", "tags": ["masculine"]}, {"code": "fr", "word": "chienne", "tags": ["feminine"]}]}
+{"word": "dog", "lang_code": "en", "pos": "noun", "senses": [{"glosses": ["A domesticated animal."]}], "synonyms": [{"word": "hound"}, {"word": "dog"}], "antonyms": [{"word": "cat"}], "translations": [{"code": "fr", "word": "chien", "tags": ["masculine"]}, {"code": "fr", "word": "chienne", "tags": ["feminine"]}]}
 {"word": "cat", "lang_code": "en", "pos": "noun", "senses": [{"glosses": ["A feline."]}]}
 {"word": "the", "lang_code": "en", "pos": "det", "senses": [{"glosses": ["Definite article."]}]}
 {"word": "ephemeral", "lang_code": "en", "pos": "adj", "senses": [{"glosses": ["Lasting a short time."]}]}
@@ -16,3 +16,4 @@
 {"word": "can", "lang_code": "en", "pos": "verb", "senses": [{"glosses": ["To be able to."]}], "translations": [{"lang_code": "fr", "word": "pouvoir"}]}
 {"word": "could", "lang_code": "en", "pos": "verb", "senses": [{"glosses": ["conditional of can", "Used as a past subjunctive."]}]}
 {pas du json
+{"word": "go on", "lang_code": "en", "pos": "verb", "senses": [{"glosses": ["To continue."]}], "translations": [{"lang_code": "fr", "word": "continuer"}]}

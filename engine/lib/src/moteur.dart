@@ -64,6 +64,16 @@ class Moteur {
       source.formes(mot.id),
       source.audio(mot.id),
       source.prononciations(mot.id),
+      // Les mots liés sont facultatifs : une base plus ancienne, sans ces tables, ne doit pas
+      // empêcher d'afficher la fiche.
+      _tolerant<List<Relation>>(source.relations(mot.id), const []),
+      mot.nature == 'verb'
+          ? _tolerant<List<String>>(source.verbesAParticule(mot.mot, 12), const [])
+          : Future<List<String>>.value(const []),
+      _tolerant<List<FauxAmi>>(
+        source.fauxAmi(mot.mot.toLowerCase()).then((v) => <FauxAmi>[if (v != null) v]),
+        const [],
+      ),
     ]);
     return Fiche(
       mot: mot,
@@ -75,8 +85,14 @@ class Moteur {
       prononciations: r[5] as List<Prononciation>,
       formeDemandee: formeDemandee,
       etiquetteRenvoi: etiquetteRenvoi,
+      relations: r[6] as List<Relation>,
+      particules: r[7] as List<String>,
+      fauxAmi: (r[8] as List<FauxAmi>).isEmpty ? null : (r[8] as List<FauxAmi>).first,
     );
   }
+
+  static Future<T> _tolerant<T>(Future<T> avenir, T parDefaut) =>
+      avenir.catchError((Object _) => parDefaut);
 
   /// Conjugaison anglaise d'un verbe : formes de la base d'abord, règles pour le reste.
   Future<Conjugaison> conjuguerMot(Mot mot, {Polarite polarite = Polarite.affirmative}) async {

@@ -52,7 +52,7 @@ class Requetes(unittest.TestCase):
             "requeteMotsParRecherche", "requeteLemmesDeForme", "requeteContraction", "requeteEquivalents",
             "requeteSens", "requeteDefinitionsFr", "requeteFormes", "requeteAudio",
             "requetePrononciations", "requeteAnglaisParFrancais", "requeteSuggestionsAnglais",
-            "requeteSuggestionsFrancais",
+            "requeteSuggestionsFrancais", "requeteRelations", "requeteVerbesAParticule", "requeteFauxAmi",
             "requeteIndexAnglais", "requeteChiffres", "requeteMeta"}
         self.assertEqual(set(self.sql), attendues)
         for nom, sql in self.sql.items():
@@ -92,6 +92,15 @@ class Requetes(unittest.TestCase):
         self.assertEqual(accents[0], "us")
         self.assertEqual(sorted(accents), sorted(["us", "us", "uk", "au"]))
         self.assertEqual(self.run_q("requetePrononciations", go), [("uk", "/ɡəʊ/")])
+
+    def test_relations_particules_faux_amis(self):
+        rel = self.run_q("requeteRelations", self.mot_id("dog", "noun"))
+        self.assertEqual(rel, [("syn", "hound"), ("ant", "cat")])
+        self.assertEqual(self.run_q("requeteVerbesAParticule", "go ", "go!", 5), [("go on",)])
+        self.assertEqual(self.run_q("requeteVerbesAParticule", "gone ", "gone!", 5), [])
+        faux = self.run_q("requeteFauxAmi", "actually")
+        self.assertEqual(faux[0][1], "actuellement")
+        self.assertEqual(self.run_q("requeteFauxAmi", "dog"), [])
 
     def test_francais_vers_anglais(self):
         rows = self.run_q("requeteAnglaisParFrancais", "chien", 10)

@@ -60,6 +60,27 @@ WHERE mot_id = ?
 ORDER BY CASE accent WHEN 'us' THEN 0 WHEN 'uk' THEN 1 ELSE 2 END, id
 ''';
 
+/// Synonymes (syn), contraires (ant) et mots de la même famille (der). Paramètre : id du mot.
+const String requeteRelations = '''
+SELECT type, mot FROM relations
+WHERE mot_id = ?
+ORDER BY CASE type WHEN 'syn' THEN 0 WHEN 'ant' THEN 1 ELSE 2 END, rowid
+''';
+
+/// Verbes à particule d'un verbe (give → give up, give in). Paramètres : borne basse « give »
+/// suivie d'une espace, borne haute « give » suivie de « ! » (texte plié), nombre maximal de lignes.
+const String requeteVerbesAParticule = '''
+SELECT mot FROM mots
+WHERE nature = 'verb' AND mot_recherche > ? AND mot_recherche < ?
+ORDER BY rang IS NULL, rang, mot
+LIMIT ?
+''';
+
+/// Faux ami écrit à la main. Paramètre : mot anglais en minuscules.
+const String requeteFauxAmi = '''
+SELECT mot, piege, vrai FROM faux_amis WHERE mot = ?
+''';
+
 /// Français → anglais. Paramètres : texte plié, nombre maximal de lignes.
 const String requeteAnglaisParFrancais = '''
 SELECT m.id, m.mot, m.nature, m.rang, t.fr, t.etiquette, t.genre, t.source

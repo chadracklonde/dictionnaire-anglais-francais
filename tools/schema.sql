@@ -98,6 +98,21 @@ CREATE TABLE IF NOT EXISTS contractions (
     traduction TEXT NOT NULL
 );
 
+-- Mots liés : synonymes (syn), contraires (ant), mots de la même famille (der).
+CREATE TABLE IF NOT EXISTS relations (
+    mot_id INTEGER NOT NULL,
+    type   TEXT NOT NULL,
+    mot    TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_relations ON relations(mot_id, type, mot);
+
+-- Faux amis écrits à la main : tools/data/faux_amis.tsv.
+CREATE TABLE IF NOT EXISTS faux_amis (
+    mot   TEXT PRIMARY KEY,                   -- mot anglais, normalisé
+    piege TEXT NOT NULL,                      -- ce qu'on croit à tort (« actuellement »)
+    vrai  TEXT NOT NULL                       -- le vrai sens (« en fait, vraiment »)
+);
+
 CREATE TABLE IF NOT EXISTS meta (
     cle    TEXT PRIMARY KEY,
     valeur TEXT NOT NULL

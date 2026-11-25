@@ -8,6 +8,7 @@ import '../data/libelles.dart';
 import '../data/speech.dart';
 import '../data/user_store.dart';
 import '../screens/conjugation_screen.dart';
+import '../screens/result_screen.dart';
 import 'listes.dart';
 
 /// Fiche d'un mot anglais : équivalents français en avant, définitions anglaises repliables.
@@ -96,6 +97,10 @@ class _FicheCardState extends State<FicheCard> {
     final uk = _api('uk');
 
     final equivalents = fiche.equivalents;
+    final exemples = [
+      for (final x in fiche.sens)
+        if (x.exemple.isNotEmpty) x.exemple
+    ].take(2).toList();
     final visibles = _tousLesEquivalents || equivalents.length <= _equivalentsVisibles
         ? equivalents
         : equivalents.take(_equivalentsVisibles).toList();
@@ -161,6 +166,33 @@ class _FicheCardState extends State<FicheCard> {
                   style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
               ),
+            if (fiche.fauxAmi != null)
+              Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.errorContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Semantics(
+                  container: true,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.warning_amber_rounded, color: theme.colorScheme.onErrorContainer),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Faux ami : « ${fiche.mot.mot} » ne veut pas dire « ${fiche.fauxAmi!.piege} ». '
+                          'Il signifie : ${fiche.fauxAmi!.vrai}.',
+                          style: theme.textTheme.bodyMedium
+                              ?.copyWith(color: theme.colorScheme.onErrorContainer),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             if (us.isNotEmpty || uk.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: 4),
@@ -193,6 +225,17 @@ class _FicheCardState extends State<FicheCard> {
                 Padding(
                   padding: const EdgeInsets.only(top: 2),
                   child: Text('• $d', style: theme.textTheme.bodyMedium),
+                ),
+            ],
+            if (exemples.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text('Exemples', style: theme.textTheme.titleSmall),
+              const SizedBox(height: 2),
+              for (final e in exemples)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text('« $e »',
+                      style: theme.textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic)),
                 ),
             ],
             if (fiche.sens.isNotEmpty) ...[
@@ -229,6 +272,10 @@ class _FicheCardState extends State<FicheCard> {
                 style: theme.textTheme.bodyMedium,
               ),
             ],
+            _MotsLies(titre: 'Synonymes', mots: fiche.synonymes),
+            _MotsLies(titre: 'Contraires', mots: fiche.contraires),
+            _MotsLies(titre: 'Verbes à particule', mots: fiche.particules),
+            _MotsLies(titre: 'Même famille', mots: fiche.famille),
             if (fiche.mot.nature == 'verb') ...[
               const SizedBox(height: 8),
               Align(
@@ -282,6 +329,43 @@ class _FicheCardState extends State<FicheCard> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Une rangée de mots liés ; un appui lance la recherche du mot.
+class _MotsLies extends StatelessWidget {
+  const _MotsLies({required this.titre, required this.mots});
+
+  final String titre;
+  final List<String> mots;
+
+  @override
+  Widget build(BuildContext context) {
+    if (mots.isEmpty) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(titre, style: theme.textTheme.titleSmall),
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: 6,
+            runSpacing: 0,
+            children: [
+              for (final m in mots)
+                ActionChip(
+                  label: Text(m),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => ResultScreen(requete: m)),
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }

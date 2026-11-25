@@ -6,6 +6,23 @@ import 'source_memoire.dart';
 void main() {
   final moteur = Moteur(SourceMemoire());
 
+  test('mots liés, verbes à particule et faux amis dans la fiche', () async {
+    final chien = await moteur.fiche(SourceMemoire.motDog);
+    expect(chien.synonymes, ['hound']);
+    expect(chien.contraires, ['cat']);
+    expect(chien.famille, ['doggy']);
+    expect(chien.particules, isEmpty);
+    expect(chien.fauxAmi, isNull);
+
+    final aller = await moteur.fiche(SourceMemoire.motGoV);
+    expect(aller.particules, ['go on', 'go out']);
+    // un nom n'a pas de verbes à particule, même s'il porte le même texte
+    expect((await moteur.fiche(SourceMemoire.motGoN)).particules, isEmpty);
+
+    final piege = await moteur.fiche(const Mot(id: 99, mot: 'actually', nature: 'adv'));
+    expect(piege.fauxAmi?.piege, 'actuellement');
+  });
+
   test('mot direct', () async {
     final r = await moteur.chercher('Hello');
     expect(r.fiches.single.mot.mot, 'hello');

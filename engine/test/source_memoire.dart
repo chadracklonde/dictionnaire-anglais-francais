@@ -78,6 +78,26 @@ class SourceMemoire implements Source {
   @override
   Future<List<Prononciation>> prononciations(int motId) async => const [];
 
+  final Map<int, List<Relation>> relationsParMot = const {
+    3: [Relation('syn', 'hound'), Relation('ant', 'cat'), Relation('der', 'doggy')],
+  };
+
+  final Map<String, List<String>> particulesParVerbe = const {
+    'go': ['go on', 'go out'],
+  };
+
+  @override
+  Future<List<Relation>> relations(int motId) async => relationsParMot[motId] ?? const [];
+
+  @override
+  Future<List<String>> verbesAParticule(String base, int limite) async =>
+      (particulesParVerbe[base] ?? const <String>[]).take(limite).toList();
+
+  @override
+  Future<FauxAmi?> fauxAmi(String mot) async => mot == 'actually'
+      ? const FauxAmi(mot: 'actually', piege: 'actuellement', vrai: 'en fait, vraiment')
+      : null;
+
   @override
   Future<List<LigneInverse>> anglaisParFrancais(String recherche, int limite) async =>
       inverses[recherche] ?? const [];

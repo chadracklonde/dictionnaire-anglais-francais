@@ -3,6 +3,7 @@
 library;
 
 import 'modeles.dart';
+import 'normalisation.dart';
 import 'requetes.dart';
 import 'source.dart';
 
@@ -110,6 +111,28 @@ class SourceSql implements Source {
   Future<List<Prononciation>> prononciations(int motId) async {
     final lignes = await _sql.requete(requetePrononciations, [motId]);
     return lignes.map((l) => Prononciation(_texte(l['accent']), _texte(l['api']))).toList();
+  }
+
+  @override
+  Future<List<Relation>> relations(int motId) async {
+    final lignes = await _sql.requete(requeteRelations, [motId]);
+    return lignes.map((l) => Relation(_texte(l['type']), _texte(l['mot']))).toList();
+  }
+
+  @override
+  Future<List<String>> verbesAParticule(String base, int limite) async {
+    final p = plier(base);
+    if (p.isEmpty) return const [];
+    final lignes = await _sql.requete(requeteVerbesAParticule, ['$p ', '$p!', limite]);
+    return lignes.map((l) => _texte(l['mot'])).toList();
+  }
+
+  @override
+  Future<FauxAmi?> fauxAmi(String mot) async {
+    final lignes = await _sql.requete(requeteFauxAmi, [mot]);
+    if (lignes.isEmpty) return null;
+    final l = lignes.first;
+    return FauxAmi(mot: _texte(l['mot']), piege: _texte(l['piege']), vrai: _texte(l['vrai']));
   }
 
   @override
