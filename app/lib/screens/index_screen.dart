@@ -11,7 +11,10 @@ import 'result_screen.dart';
 
 /// Index alphabétique des mots anglais, par lettre, paginé par curseur.
 class IndexScreen extends StatefulWidget {
-  const IndexScreen({super.key});
+  const IndexScreen({super.key, this.lettreInitiale = 'a'});
+
+  /// Lettre affichée à l'ouverture (l'accueil ouvre l'index sur la lettre touchée).
+  final String lettreInitiale;
 
   @override
   State<IndexScreen> createState() => _IndexScreenState();
@@ -46,7 +49,7 @@ class _IndexScreenState extends State<IndexScreen> {
     _defilement.addListener(() {
       if (_defilement.position.extentAfter < 600) _suite();
     });
-    WidgetsBinding.instance.addPostFrameCallback((_) => _recommencer('a'));
+    WidgetsBinding.instance.addPostFrameCallback((_) => _recommencer(widget.lettreInitiale));
   }
 
   @override

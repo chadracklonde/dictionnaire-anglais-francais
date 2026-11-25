@@ -5,6 +5,7 @@ import 'package:share_plus/share_plus.dart';
 import '../app.dart';
 import '../widgets/mise_en_page.dart';
 import '../widgets/packs_audio.dart';
+import 'about_screen.dart';
 import 'tutorial_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -143,6 +144,13 @@ class SettingsScreen extends StatelessWidget {
             label: const Text('Revoir le tutoriel'),
             onPressed: () => Navigator.of(context)
                 .push(MaterialPageRoute<void>(builder: (_) => const TutorialScreen())),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.info_outline_rounded),
+            label: const Text('À propos et licences'),
+            onPressed: () => Navigator.of(context)
+                .push(MaterialPageRoute<void>(builder: (_) => const AboutScreen())),
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
