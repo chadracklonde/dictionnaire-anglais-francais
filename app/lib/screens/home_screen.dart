@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../app.dart';
 import '../data/libelles.dart';
+import '../data/mots_du_jour.dart';
 import '../data/user_store.dart';
 import 'about_screen.dart';
 import 'conjugation_screen.dart';
@@ -125,7 +126,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
+          Builder(builder: (context) {
+            final mot = motDuJour(DateTime.now());
+            return Card(
+              margin: EdgeInsets.zero,
+              child: ListTile(
+                leading: Icon(Icons.wb_sunny_outlined, color: theme.colorScheme.primary),
+                title: Text(mot),
+                subtitle: const Text('Mot du jour'),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => _chercher(mot),
+              ),
+            );
+          }),
+          const SizedBox(height: 16),
           Wrap(
             spacing: 12,
             runSpacing: 12,

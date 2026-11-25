@@ -1,5 +1,7 @@
 import 'package:dicoenfr_engine/dicoenfr_engine.dart';
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../app.dart';
 import '../data/libelles.dart';
@@ -31,6 +33,23 @@ class _FicheCardState extends State<FicheCard> {
         content: Text('Aucune voix anglaise n\'est installée sur cet appareil.'),
       ));
     }
+  }
+
+  void _partager() {
+    final fiche = widget.fiche;
+    final eq = fiche.equivalents.take(6).map((e) => e.fr).join(', ');
+    final texte = '${fiche.mot.mot} (${natureFr(fiche.mot.nature)})'
+        '${eq.isEmpty ? '' : ' : $eq'}\n— Anglais Français';
+    Share.share(texte);
+  }
+
+  Future<void> _signaler() async {
+    final mot = widget.fiche.mot;
+    final url = Uri.https('github.com', '/chadracklonde/dictionnaire-anglais-francais/issues/new', {
+      'title': 'Erreur dans la fiche « ${mot.mot} » (${natureFr(mot.nature)})',
+      'body': 'Mot : ${mot.mot}\nNature : ${mot.nature}\n\nCe qui est faux ou manque :\n',
+    });
+    await launchUrl(url, mode: LaunchMode.externalApplication);
   }
 
   String _api(String accent) {
@@ -86,6 +105,11 @@ class _FicheCardState extends State<FicheCard> {
                   tooltip: 'Écouter',
                   icon: const Icon(Icons.volume_up_rounded),
                   onPressed: () => _lire(context),
+                ),
+                IconButton(
+                  tooltip: 'Partager',
+                  icon: const Icon(Icons.share_rounded),
+                  onPressed: _partager,
                 ),
                 IconButton(
                   tooltip: favori ? 'Retirer des favoris' : 'Ajouter aux favoris',
@@ -184,6 +208,15 @@ class _FicheCardState extends State<FicheCard> {
                 ),
               ),
             ],
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                icon: const Icon(Icons.flag_outlined, size: 18),
+                label: const Text('Signaler une erreur'),
+                onPressed: _signaler,
+              ),
+            ),
           ],
         ),
       ),
