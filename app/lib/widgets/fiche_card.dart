@@ -35,6 +35,21 @@ class _FicheCardState extends State<FicheCard> {
     }
   }
 
+  Future<void> _basculerFavori(BuildContext context, String cle) async {
+    final user = AppScope.of(context).user;
+    final messenger = ScaffoldMessenger.of(context);
+    final position = user.favoris.indexOf(cle);
+    final retire = position >= 0;
+    await user.basculerFavori(cle);
+    if (!retire) return;
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: const Text('Retiré des favoris.'),
+        action: SnackBarAction(label: 'Annuler', onPressed: () => user.insererFavori(position, cle)),
+      ));
+  }
+
   void _partager() {
     final fiche = widget.fiche;
     final eq = fiche.equivalents.take(6).map((e) => e.fr).join(', ');
@@ -63,7 +78,6 @@ class _FicheCardState extends State<FicheCard> {
     final theme = Theme.of(context);
     final services = AppScope.of(context);
     final cle = UserStore.cle(fiche.mot.mot, fiche.mot.nature);
-    final favori = services.user.estFavori(cle);
     final us = _api('us');
     final uk = _api('uk');
 
@@ -111,10 +125,16 @@ class _FicheCardState extends State<FicheCard> {
                   icon: const Icon(Icons.share_rounded),
                   onPressed: _partager,
                 ),
-                IconButton(
-                  tooltip: favori ? 'Retirer des favoris' : 'Ajouter aux favoris',
-                  icon: Icon(favori ? Icons.star_rounded : Icons.star_border_rounded),
-                  onPressed: () => services.user.basculerFavori(cle),
+                ListenableBuilder(
+                  listenable: services.user,
+                  builder: (context, _) {
+                    final actif = services.user.estFavori(cle);
+                    return IconButton(
+                      tooltip: actif ? 'Retirer des favoris' : 'Ajouter aux favoris',
+                      icon: Icon(actif ? Icons.star_rounded : Icons.star_border_rounded),
+                      onPressed: () => _basculerFavori(context, cle),
+                    );
+                  },
                 ),
               ],
             ),

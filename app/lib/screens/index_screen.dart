@@ -4,6 +4,7 @@ import 'package:dicoenfr_engine/dicoenfr_engine.dart';
 import 'package:flutter/material.dart';
 
 import '../app.dart';
+import '../widgets/menu_mot.dart';
 import '../widgets/mise_en_page.dart';
 import 'result_screen.dart';
 
@@ -24,14 +25,16 @@ class _IndexScreenState extends State<IndexScreen> {
   Timer? _delai;
   List<String> _suggestions = const [];
   String _lettre = 'a';
+  String _debut = 'a';
   final List<EntreeIndex> _entrees = [];
   bool _charge = false;
   bool _fini = false;
 
-  /// Clé située juste avant tous les mots de la lettre.
-  static String _curseurInitial(String lettre) {
-    final avant = lettre == 'a' ? '`' : String.fromCharCode(lettre.codeUnitAt(0) - 1);
-    return '$avant￿';
+  /// Clé située juste avant tous les mots qui commencent par [debut] (une ou deux lettres).
+  static String _curseurInitial(String debut) {
+    final c = debut.codeUnitAt(debut.length - 1);
+    final avant = c == 0x61 ? '`' : String.fromCharCode(c - 1);
+    return '${debut.substring(0, debut.length - 1)}$avant\uffff';
   }
 
   @override
@@ -73,9 +76,10 @@ class _IndexScreenState extends State<IndexScreen> {
     Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => ResultScreen(requete: t)));
   }
 
-  Future<void> _recommencer(String lettre) async {
+  Future<void> _recommencer(String lettre, {String? debut}) async {
     setState(() {
       _lettre = lettre;
+      _debut = debut ?? lettre;
       _entrees.clear();
       _fini = false;
     });
@@ -87,7 +91,7 @@ class _IndexScreenState extends State<IndexScreen> {
     if (_charge || _fini) return;
     _charge = true;
     final lettre = _lettre;
-    final apres = _entrees.isEmpty ? _curseurInitial(lettre) : _entrees.last.cle;
+    final apres = _entrees.isEmpty ? _curseurInitial(_debut) : _entrees.last.cle;
     final page = await AppScope.of(context).source.indexAnglais(apres, _page);
     _charge = false;
     if (!mounted || lettre != _lettre) return;
@@ -145,6 +149,7 @@ class _IndexScreenState extends State<IndexScreen> {
                     ListTile(
                       dense: true,
                       title: Text(s),
+                      onLongPress: () => afficherMenuMot(context, s),
                       onTap: () {
                         _recherche.text = s;
                         _chercher(s);
@@ -172,6 +177,32 @@ class _IndexScreenState extends State<IndexScreen> {
               ],
             ),
           ),
+          SizedBox(
+            height: 48,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: ChoiceChip(
+                    label: Text('${_lettre.toUpperCase()}…'),
+                    selected: _debut == _lettre,
+                    onSelected: (_) => _recommencer(_lettre),
+                  ),
+                ),
+                for (final l in _lettres.split(''))
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 3),
+                    child: ChoiceChip(
+                      label: Text('$_lettre$l'),
+                      selected: _debut == '$_lettre$l',
+                      onSelected: (_) => _recommencer(_lettre, debut: '$_lettre$l'),
+                    ),
+                  ),
+              ],
+            ),
+          ),
           Expanded(
             child: _entrees.isEmpty && !_fini
                 ? const Center(child: CircularProgressIndicator())
@@ -190,6 +221,7 @@ class _IndexScreenState extends State<IndexScreen> {
                       return ListTile(
                         dense: true,
                         title: Text(e.mot, style: theme.textTheme.bodyLarge),
+                        onLongPress: () => afficherMenuMot(context, e.mot),
                         onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
                           builder: (_) => ResultScreen(requete: e.mot),
                         )),

@@ -58,6 +58,23 @@ class UserStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Remet un favori à sa place (annulation d'une suppression).
+  Future<void> insererFavori(int index, String cle) async {
+    if (favoris.contains(cle)) return;
+    favoris.insert(index.clamp(0, favoris.length), cle);
+    await _prefs.setStringList('favoris', favoris);
+    notifyListeners();
+  }
+
+  /// Remplace tout l'historique (annulation d'un effacement).
+  Future<void> restaurerHistorique(List<String> cles) async {
+    historique
+      ..clear()
+      ..addAll(cles);
+    await _prefs.setStringList('historique', historique);
+    notifyListeners();
+  }
+
   Future<void> ajouterHistorique(String cle) async {
     historique.remove(cle);
     historique.insert(0, cle);

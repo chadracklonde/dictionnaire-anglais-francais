@@ -7,13 +7,11 @@ import '../data/libelles.dart';
 import '../data/mots_du_jour.dart';
 import '../data/user_store.dart';
 import 'about_screen.dart';
-import 'conjugation_screen.dart';
 import 'entry_screen.dart';
-import 'favorites_screen.dart';
-import 'index_screen.dart';
 import 'result_screen.dart';
 import 'settings_screen.dart';
 import 'tutorial_screen.dart';
+import '../widgets/menu_mot.dart';
 import '../widgets/mise_en_page.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -69,10 +67,17 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final user = AppScope.of(context).user;
-    return Scaffold(
+    return ListenableBuilder(
+      listenable: user,
+      builder: (context, _) => Scaffold(
       appBar: AppBar(
         title: const Text('Anglais Français'),
         actions: [
+          IconButton(
+            tooltip: 'Réglages',
+            icon: const Icon(Icons.settings_rounded),
+            onPressed: () => _ouvrir(const SettingsScreen()),
+          ),
           IconButton(
             tooltip: 'À propos',
             icon: const Icon(Icons.info_outline_rounded),
@@ -140,33 +145,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             );
           }),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              _Raccourci(
-                icone: Icons.sort_by_alpha_rounded,
-                texte: 'Index',
-                surAppui: () => _ouvrir(const IndexScreen()),
-              ),
-              _Raccourci(
-                icone: Icons.star_rounded,
-                texte: 'Favoris',
-                surAppui: () => _ouvrir(const FavoritesScreen()),
-              ),
-              _Raccourci(
-                icone: Icons.menu_book_rounded,
-                texte: 'Conjugaison',
-                surAppui: () => _ouvrir(const ConjugationScreen()),
-              ),
-              _Raccourci(
-                icone: Icons.settings_rounded,
-                texte: 'Réglages',
-                surAppui: () => _ouvrir(const SettingsScreen()),
-              ),
-            ],
-          ),
           const SizedBox(height: 24),
           if (user.historique.isNotEmpty) ...[
             Text('Récemment consultés', style: theme.textTheme.titleMedium),
@@ -180,6 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   title: Text(mot),
                   subtitle: Text(natureFr(nature)),
                   onTap: () => _ouvrirCle(cle),
+                  onLongPress: () => afficherMenuMot(context, mot),
                 );
               }),
           ] else
@@ -189,6 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
         ],
       ),
+    ),
     );
   }
 
@@ -197,43 +177,5 @@ class _HomeScreenState extends State<HomeScreen> {
     final mot = await AppScope.of(context).resoudre(cle);
     if (mot == null || !mounted) return;
     navigateur.push(MaterialPageRoute<void>(builder: (_) => EntryScreen(mot: mot)));
-  }
-}
-
-class _Raccourci extends StatelessWidget {
-  const _Raccourci({required this.icone, required this.texte, required this.surAppui});
-
-  final IconData icone;
-  final String texte;
-  final VoidCallback surAppui;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return SizedBox(
-      width: 150,
-      child: Semantics(
-        button: true,
-        label: texte,
-        excludeSemantics: true,
-        child: Card(
-        margin: EdgeInsets.zero,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: surAppui,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
-            child: Column(
-              children: [
-                Icon(icone, size: 30, color: theme.colorScheme.primary),
-                const SizedBox(height: 8),
-                Text(texte, style: theme.textTheme.titleSmall),
-              ],
-            ),
-          ),
-        ),
-      ),
-      ),
-    );
   }
 }

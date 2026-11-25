@@ -1,0 +1,45 @@
+# Politique de confidentialité — Anglais Français
+
+Dernière mise à jour : 25 novembre 2026
+
+**Anglais Français** est un dictionnaire anglais ↔ français conçu et publié par Chadrack Londe (Kindu, République démocratique du Congo).
+
+## En résumé
+
+L'application ne collecte, ne transmet et ne partage **aucune donnée personnelle**. Elle fonctionne entièrement hors ligne.
+
+## Ce que l'application ne fait pas
+
+- Elle n'a **aucune permission Internet** et n'envoie rien sur un serveur.
+- Elle ne demande **aucun compte**, aucun e-mail, aucun numéro de téléphone.
+- Elle ne contient **aucune publicité** et aucun outil de statistiques ou de suivi.
+- Elle n'utilise ni votre position, ni vos contacts, ni votre micro, ni votre appareil photo.
+
+## Ce qui reste sur votre appareil
+
+Vos **favoris**, votre **historique de consultation** et vos **réglages** (thème, taille du texte, accent de la voix) sont enregistrés uniquement sur votre appareil. Personne d'autre n'y a accès. Vous pouvez les effacer à tout moment (historique : écran Favoris ; tout : désinstaller l'application ou vider ses données dans les réglages du téléphone).
+
+## Fonctions qui ouvrent un autre service
+
+Certaines actions, que **vous** déclenchez, passent par une autre application de votre téléphone. L'application ne reçoit alors aucune donnée en retour :
+
+- **Prononciation** : la synthèse vocale installée sur votre téléphone lit le mot.
+- **Partager** : le menu de partage de votre téléphone s'ouvre avec le texte de la fiche ; vous choisissez le destinataire.
+- **Signaler une erreur** et les liens de l'écran « À propos » : votre navigateur s'ouvre sur une page web (GitHub, Wikimédia, Creative Commons). Ces sites ont leur propre politique de confidentialité.
+
+## Contenu et licences
+
+Les mots, définitions et traductions viennent du Wiktionnaire, publié sous licence Creative Commons Attribution – Partage dans les mêmes conditions 4.0 (CC BY-SA 4.0). Le détail est dans l'écran « À propos ».
+
+## Enfants
+
+L'application ne collecte aucune donnée, y compris sur les enfants.
+
+## Modifications
+
+Si une version future devait envoyer des données (par exemple pour télécharger un pack audio), cette politique serait mise à jour **avant** sa publication, et la nouvelle version ne serait publiée qu'ensuite.
+
+## Contact
+
+Pour toute question : ouvrir une demande sur la page du projet,
+https://github.com/chadracklonde/dictionnaire-anglais-francais/issues

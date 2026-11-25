@@ -8,7 +8,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'data/db_installer.dart';
 import 'data/executeur_sqflite.dart';
 import 'data/user_store.dart';
-import 'screens/home_screen.dart';
+import 'screens/shell.dart';
 import 'screens/install_screen.dart';
 import 'theme.dart';
 
@@ -136,7 +136,7 @@ class _DictionnaireAppState extends State<DictionnaireApp> {
               onRetry: _demarrer,
               mots: _mots,
             )
-          : const HomeScreen(),
+          : const Shell(),
     );
   }
 
