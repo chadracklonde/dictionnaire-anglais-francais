@@ -17,13 +17,14 @@ L'application ne collecte, ne transmet et ne partage **aucune donnée personnell
 
 ## Ce qui reste sur votre appareil
 
-Vos **favoris**, votre **historique de consultation** et vos **réglages** (thème, taille du texte, accent de la voix) sont enregistrés uniquement sur votre appareil. Personne d'autre n'y a accès. Vous pouvez les effacer à tout moment (historique : écran Favoris ; tout : désinstaller l'application ou vider ses données dans les réglages du téléphone).
+Vos **favoris**, vos **notes personnelles**, vos **listes de mots**, votre **historique de consultation** et vos **réglages** (thème, taille du texte, accent de la voix) sont enregistrés uniquement sur votre appareil. Personne d'autre n'y a accès. Vous pouvez les effacer à tout moment (historique : écran Favoris ; tout : désinstaller l'application ou vider ses données dans les réglages du téléphone).
 
 ## Fonctions qui ouvrent un autre service
 
 Certaines actions, que **vous** déclenchez, passent par une autre application de votre téléphone. L'application ne reçoit alors aucune donnée en retour :
 
 - **Prononciation** : la synthèse vocale installée sur votre téléphone lit le mot.
+- **Exporter / importer** : l'export copie vos favoris, notes et listes dans le presse-papiers et ouvre le menu de partage de votre téléphone ; l'import lit le texte que vous avez copié. Rien ne quitte l'appareil sans votre action.
 - **Partager** : le menu de partage de votre téléphone s'ouvre avec le texte de la fiche ; vous choisissez le destinataire.
 - **Signaler une erreur** et les liens de l'écran « À propos » : votre navigateur s'ouvre sur une page web (GitHub, Wikimédia, Creative Commons). Ces sites ont leur propre politique de confidentialité.
 

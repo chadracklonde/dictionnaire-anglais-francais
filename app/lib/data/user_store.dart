@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -6,13 +8,183 @@ import 'package:shared_preferences/shared_preferences.dart';
 class UserStore extends ChangeNotifier {
   UserStore(this._prefs)
       : favoris = List.of(_prefs.getStringList('favoris') ?? const []),
-        historique = List.of(_prefs.getStringList('historique') ?? const []);
+        historique = List.of(_prefs.getStringList('historique') ?? const []),
+        notes = _decoderNotes(_prefs.getString('notes')),
+        listes = _decoderListes(_prefs.getString('listes'));
 
   static const int _historiqueMax = 100;
 
   final SharedPreferences _prefs;
   final List<String> favoris;
   final List<String> historique;
+
+  /// Notes personnelles : clé du mot → texte.
+  final Map<String, String> notes;
+
+  /// Listes personnelles : nom → clés des mots (dans l'ordre d'ajout).
+  final Map<String, List<String>> listes;
+
+  static const int _noteMax = 2000;
+  static const int _nomListeMax = 60;
+
+  static Map<String, String> _decoderNotes(String? brut) {
+    final resultat = <String, String>{};
+    if (brut == null) return resultat;
+    try {
+      final data = jsonDecode(brut);
+      if (data is Map) {
+        data.forEach((k, v) {
+          if (k is String && v is String && v.trim().isNotEmpty) resultat[k] = v;
+        });
+      }
+    } catch (_) {}
+    return resultat;
+  }
+
+  static Map<String, List<String>> _decoderListes(String? brut) {
+    final resultat = <String, List<String>>{};
+    if (brut == null) return resultat;
+    try {
+      final data = jsonDecode(brut);
+      if (data is Map) {
+        data.forEach((k, v) {
+          if (k is String && k.trim().isNotEmpty && v is List) {
+            resultat[k] = [for (final x in v) if (x is String && x.isNotEmpty) x];
+          }
+        });
+      }
+    } catch (_) {}
+    return resultat;
+  }
+
+  Future<void> _enregistrerNotes() async {
+    await _prefs.setString('notes', jsonEncode(notes));
+    notifyListeners();
+  }
+
+  Future<void> _enregistrerListes() async {
+    await _prefs.setString('listes', jsonEncode(listes));
+    notifyListeners();
+  }
+
+  // ---- Notes ----
+
+  String noteDe(String cle) => notes[cle] ?? '';
+
+  /// Enregistre la note d'un mot ; un texte vide la supprime.
+  Future<void> definirNote(String cle, String texte) async {
+    var t = texte.trim();
+    if (t.length > _noteMax) t = t.substring(0, _noteMax);
+    if (t.isEmpty) {
+      notes.remove(cle);
+    } else {
+      notes[cle] = t;
+    }
+    await _enregistrerNotes();
+  }
+
+  // ---- Listes ----
+
+  /// Crée une liste. Renvoie false si le nom est vide ou déjà pris (sans tenir compte de la casse).
+  Future<bool> creerListe(String nom) async {
+    var n = nom.trim();
+    if (n.length > _nomListeMax) n = n.substring(0, _nomListeMax);
+    if (n.isEmpty) return false;
+    if (listes.keys.any((k) => k.toLowerCase() == n.toLowerCase())) return false;
+    listes[n] = [];
+    await _enregistrerListes();
+    return true;
+  }
+
+  Future<void> supprimerListe(String nom) async {
+    if (listes.remove(nom) == null) return;
+    await _enregistrerListes();
+  }
+
+  /// Remet une liste supprimée (annulation).
+  Future<void> restaurerListe(String nom, List<String> mots) async {
+    listes[nom] = List.of(mots);
+    await _enregistrerListes();
+  }
+
+  bool estDansListe(String nom, String cle) => listes[nom]?.contains(cle) ?? false;
+
+  Future<void> basculerDansListe(String nom, String cle) async {
+    final liste = listes[nom];
+    if (liste == null) return;
+    if (!liste.remove(cle)) liste.add(cle);
+    await _enregistrerListes();
+  }
+
+  /// Remet un mot dans une liste à sa place (annulation).
+  Future<void> insererDansListe(String nom, int index, String cle) async {
+    final liste = listes[nom];
+    if (liste == null || liste.contains(cle)) return;
+    liste.insert(index.clamp(0, liste.length), cle);
+    await _enregistrerListes();
+  }
+
+  // ---- Sauvegarde ----
+
+  /// Favoris, notes et listes sous forme de texte JSON (l'historique et les réglages restent locaux).
+  String exporter() => const JsonEncoder.withIndent('  ').convert({
+        'application': 'dicoenfr',
+        'version': 1,
+        'favoris': favoris,
+        'notes': notes,
+        'listes': listes,
+      });
+
+  /// Fusionne une sauvegarde : les favoris et mots de listes absents sont ajoutés, les notes
+  /// du fichier remplacent celles du même mot. Lève [FormatException] si le texte n'est pas valide.
+  Future<ResumeImport> importer(String texte) async {
+    final dynamic data;
+    try {
+      data = jsonDecode(texte);
+    } catch (_) {
+      throw const FormatException('Le texte n\'est pas une sauvegarde valide.');
+    }
+    if (data is! Map || data['application'] != 'dicoenfr') {
+      throw const FormatException('Ce texte ne vient pas d\'Anglais Français.');
+    }
+    var nbFavoris = 0, nbNotes = 0, nbListes = 0;
+    final fav = data['favoris'];
+    if (fav is List) {
+      for (final c in fav) {
+        if (c is String && c.isNotEmpty && !favoris.contains(c)) {
+          favoris.add(c);
+          nbFavoris++;
+        }
+      }
+    }
+    final nts = data['notes'];
+    if (nts is Map) {
+      nts.forEach((k, v) {
+        if (k is String && k.isNotEmpty && v is String && v.trim().isNotEmpty) {
+          notes[k] = v.trim().length > _noteMax ? v.trim().substring(0, _noteMax) : v.trim();
+          nbNotes++;
+        }
+      });
+    }
+    final lst = data['listes'];
+    if (lst is Map) {
+      lst.forEach((k, v) {
+        if (k is! String || k.trim().isEmpty || v is! List) return;
+        final nom = k.trim().length > _nomListeMax ? k.trim().substring(0, _nomListeMax) : k.trim();
+        final existante = listes.keys.where((x) => x.toLowerCase() == nom.toLowerCase());
+        final cible = existante.isEmpty ? (listes[nom] = <String>[]) : listes[existante.first]!;
+        if (existante.isEmpty) nbListes++;
+        for (final c in v) {
+          if (c is String && c.isNotEmpty && !cible.contains(c)) cible.add(c);
+        }
+      });
+    }
+    await _prefs.setStringList('favoris', favoris);
+    await _prefs.setString('notes', jsonEncode(notes));
+    await _prefs.setString('listes', jsonEncode(listes));
+    notifyListeners();
+    return ResumeImport(favoris: nbFavoris, notes: nbNotes, listes: nbListes);
+  }
 
   static String cle(String mot, String nature) => '$mot\t$nature';
 
@@ -90,4 +262,13 @@ class UserStore extends ChangeNotifier {
     await _prefs.setStringList('historique', historique);
     notifyListeners();
   }
+}
+
+/// Ce qu'une importation a ajouté ou modifié.
+class ResumeImport {
+  const ResumeImport({required this.favoris, required this.notes, required this.listes});
+
+  final int favoris;
+  final int notes;
+  final int listes;
 }

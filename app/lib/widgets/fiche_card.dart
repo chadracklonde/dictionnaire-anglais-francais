@@ -8,6 +8,7 @@ import '../data/libelles.dart';
 import '../data/speech.dart';
 import '../data/user_store.dart';
 import '../screens/conjugation_screen.dart';
+import 'listes.dart';
 
 /// Fiche d'un mot anglais : équivalents français en avant, définitions anglaises repliables.
 class FicheCard extends StatefulWidget {
@@ -48,6 +49,19 @@ class _FicheCardState extends State<FicheCard> {
         content: const Text('Retiré des favoris.'),
         action: SnackBarAction(label: 'Annuler', onPressed: () => user.insererFavori(position, cle)),
       ));
+  }
+
+  Future<void> _modifierNote(BuildContext context, String cle) async {
+    final user = AppScope.of(context).user;
+    final texte = await demanderTexte(
+      context,
+      titre: 'Ma note sur « ${widget.fiche.mot.mot} »',
+      initial: user.noteDe(cle),
+      indication: 'Un exemple, une astuce pour retenir…',
+      lignes: 3,
+      max: 2000,
+    );
+    if (texte != null) await user.definirNote(cle, texte);
   }
 
   void _partager() {
@@ -228,14 +242,43 @@ class _FicheCardState extends State<FicheCard> {
                 ),
               ),
             ],
-            const SizedBox(height: 4),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                icon: const Icon(Icons.flag_outlined, size: 18),
-                label: const Text('Signaler une erreur'),
-                onPressed: _signaler,
-              ),
+            ListenableBuilder(
+              listenable: services.user,
+              builder: (context, _) {
+                final note = services.user.noteDe(cle);
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (note.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Text('Ma note', style: theme.textTheme.titleSmall),
+                      const SizedBox(height: 2),
+                      Text(note, style: theme.textTheme.bodyMedium),
+                    ],
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 4,
+                      children: [
+                        TextButton.icon(
+                          icon: const Icon(Icons.edit_note_rounded, size: 20),
+                          label: Text(note.isEmpty ? 'Ajouter une note' : 'Modifier la note'),
+                          onPressed: () => _modifierNote(context, cle),
+                        ),
+                        TextButton.icon(
+                          icon: const Icon(Icons.playlist_add_rounded, size: 20),
+                          label: const Text('Listes'),
+                          onPressed: () => afficherChoixListes(context, cle),
+                        ),
+                        TextButton.icon(
+                          icon: const Icon(Icons.flag_outlined, size: 18),
+                          label: const Text('Signaler une erreur'),
+                          onPressed: _signaler,
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         ),

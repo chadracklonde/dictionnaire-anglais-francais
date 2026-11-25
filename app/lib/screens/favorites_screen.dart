@@ -5,7 +5,9 @@ import '../data/libelles.dart';
 import '../data/user_store.dart';
 import '../widgets/menu_mot.dart';
 import '../widgets/mise_en_page.dart';
+import '../widgets/listes.dart';
 import 'entry_screen.dart';
+import 'liste_screen.dart';
 
 class FavoritesScreen extends StatelessWidget {
   const FavoritesScreen({super.key});
@@ -13,7 +15,7 @@ class FavoritesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Favoris'),
@@ -21,12 +23,13 @@ class FavoritesScreen extends StatelessWidget {
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white70,
             indicatorColor: Colors.white,
-            tabs: [Tab(text: 'Favoris'), Tab(text: 'Récents')],
+            tabs: [Tab(text: 'Favoris'), Tab(text: 'Listes'), Tab(text: 'Récents')],
           ),
         ),
         body: const TabBarView(
           children: [
             _Liste(favoris: true),
+            _Listes(),
             _Liste(favoris: false),
           ],
         ),
@@ -132,6 +135,70 @@ class _Liste extends StatelessWidget {
             );
           }),
       ],
+    );
+  }
+}
+
+/// Onglet « Listes » : listes personnelles de mots.
+class _Listes extends StatelessWidget {
+  const _Listes();
+
+  @override
+  Widget build(BuildContext context) {
+    final user = AppScope.of(context).user;
+    return ListenableBuilder(
+      listenable: user,
+      builder: (context, _) {
+        final noms = user.listes.keys.toList();
+        return ListView(
+          padding: padPage(context, v: 8),
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Nouvelle liste'),
+                onPressed: () => creerListeAvecDialogue(context),
+              ),
+            ),
+            if (noms.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(24),
+                child: Text(
+                  'Créez une liste (par exemple « à réviser ») puis ajoutez-y des mots '
+                  'depuis leur fiche avec le bouton « Listes ».',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            for (final nom in noms)
+              ListTile(
+                leading: const Icon(Icons.list_alt_rounded),
+                title: Text(nom),
+                subtitle: Text('${user.listes[nom]!.length} mot(s)'),
+                trailing: IconButton(
+                  tooltip: 'Supprimer la liste',
+                  icon: const Icon(Icons.delete_outline_rounded),
+                  onPressed: () {
+                    final mots = List<String>.of(user.listes[nom]!);
+                    final messenger = ScaffoldMessenger.of(context);
+                    user.supprimerListe(nom);
+                    messenger
+                      ..hideCurrentSnackBar()
+                      ..showSnackBar(SnackBar(
+                        content: Text('Liste « $nom » supprimée.'),
+                        action: SnackBarAction(
+                          label: 'Annuler',
+                          onPressed: () => user.restaurerListe(nom, mots),
+                        ),
+                      ));
+                  },
+                ),
+                onTap: () => Navigator.of(context)
+                    .push(MaterialPageRoute<void>(builder: (_) => ListeScreen(nom: nom))),
+              ),
+          ],
+        );
+      },
     );
   }
 }
