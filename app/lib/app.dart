@@ -13,7 +13,7 @@ import 'screens/install_screen.dart';
 import 'theme.dart';
 
 /// Version affichée dans « À propos » (à garder alignée sur pubspec.yaml).
-const String appVersion = '0.6.0';
+const String appVersion = '0.7.0';
 
 /// Services partagés par tous les écrans.
 class AppServices {

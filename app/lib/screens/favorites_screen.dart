@@ -1,3 +1,4 @@
+import 'package:dicoenfr_engine/dicoenfr_engine.dart' show Mot;
 import 'package:flutter/material.dart';
 
 import '../app.dart';
@@ -9,8 +10,25 @@ import '../widgets/listes.dart';
 import 'entry_screen.dart';
 import 'liste_screen.dart';
 
-class FavoritesScreen extends StatelessWidget {
+class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
+
+  @override
+  State<FavoritesScreen> createState() => _FavoritesScreenState();
+}
+
+class _FavoritesScreenState extends State<FavoritesScreen> {
+  bool _large = false;
+  Mot? _selection;
+
+  /// Sur grand écran la fiche s'ouvre à droite de la liste, sinon dans un nouvel écran.
+  void _ouvrir(Mot mot) {
+    if (_large) {
+      setState(() => _selection = mot);
+    } else {
+      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => EntryScreen(mot: mot)));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,22 +44,32 @@ class FavoritesScreen extends StatelessWidget {
             tabs: [Tab(text: 'Favoris'), Tab(text: 'Listes'), Tab(text: 'Récents')],
           ),
         ),
-        body: const TabBarView(
-          children: [
-            _Liste(favoris: true),
-            _Listes(),
-            _Liste(favoris: false),
-          ],
-        ),
+        body: LayoutBuilder(builder: (context, c) {
+          _large = c.maxWidth >= largeurDeuxVolets;
+          final onglets = TabBarView(
+            children: [
+              _Liste(favoris: true, ouvrir: _ouvrir),
+              const _Listes(),
+              _Liste(favoris: false, ouvrir: _ouvrir),
+            ],
+          );
+          if (!_large) return onglets;
+          final mot = _selection;
+          return DeuxVolets(
+            liste: onglets,
+            detail: mot == null ? null : EntryScreen(key: ValueKey(mot.id), mot: mot),
+          );
+        }),
       ),
     );
   }
 }
 
 class _Liste extends StatelessWidget {
-  const _Liste({required this.favoris});
+  const _Liste({required this.favoris, required this.ouvrir});
 
   final bool favoris;
+  final void Function(Mot mot) ouvrir;
 
   @override
   Widget build(BuildContext context) {
@@ -101,10 +129,9 @@ class _Liste extends StatelessWidget {
               subtitle: Text(natureFr(nature)),
               onLongPress: () => afficherMenuMot(context, mot),
               onTap: () async {
-                final navigateur = Navigator.of(context);
                 final m = await services.resoudre(cle);
                 if (m == null) return;
-                navigateur.push(MaterialPageRoute<void>(builder: (_) => EntryScreen(mot: m)));
+                ouvrir(m);
               },
             );
             if (!favoris) return tuile;

@@ -26,6 +26,8 @@ class _IndexScreenState extends State<IndexScreen> {
   Timer? _delai;
   List<String> _suggestions = const [];
   String _lettre = 'a';
+  bool _large = false;
+  String? _selection;
   String _debut = 'a';
   final List<EntreeIndex> _entrees = [];
   bool _charge = false;
@@ -74,10 +76,26 @@ class _IndexScreenState extends State<IndexScreen> {
     final t = texte.trim();
     if (t.isEmpty) return;
     FocusScope.of(context).unfocus();
-    Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) => Moteur.estMotif(t) ? MotifScreen(motif: t) : ResultScreen(requete: t),
-    ));
+    if (Moteur.estMotif(t)) {
+      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => MotifScreen(motif: t)));
+    } else {
+      _afficher(t);
+    }
   }
+
+  /// Sur grand écran le résultat s'ouvre à droite de la liste, sinon dans un nouvel écran.
+  void _afficher(String requete) {
+    if (_large) {
+      setState(() => _selection = requete);
+    } else {
+      Navigator.of(context)
+          .push(MaterialPageRoute<void>(builder: (_) => ResultScreen(requete: requete)));
+    }
+  }
+
+  Widget? _detail() => _selection == null
+      ? null
+      : ResultScreen(key: ValueKey(_selection), requete: _selection!);
 
   Future<void> _recommencer(String lettre, {String? debut}) async {
     setState(() {
@@ -115,7 +133,9 @@ class _IndexScreenState extends State<IndexScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Index')),
-      body: Column(
+      body: LayoutBuilder(builder: (context, c) {
+      _large = c.maxWidth >= largeurDeuxVolets;
+      final liste = Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -225,16 +245,16 @@ class _IndexScreenState extends State<IndexScreen> {
                         dense: true,
                         title: Text(e.mot, style: theme.textTheme.bodyLarge),
                         onLongPress: () => afficherMenuMot(context, e.mot),
-                        onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                          builder: (_) => ResultScreen(requete: e.mot),
-                        )),
+                        onTap: () => _afficher(e.mot),
                       );
                     },
                   ),
           ),
           ],
         ],
-      ),
+      );
+      return _large ? DeuxVolets(liste: liste, detail: _detail()) : liste;
+    }),
     );
   }
 }
