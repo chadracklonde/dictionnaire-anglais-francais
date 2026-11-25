@@ -286,3 +286,11 @@ Tout reste local (aucune donnée envoyée, aucune permission) :
 - SQL : `requeteMotsHasard`, `requeteFauxAmisHasard` (testées par `test_requetes.py`).
 - Pas fait : notification de rappel (demanderait la permission `POST_NOTIFICATIONS` et un greffon), dictée et
   exercices à trous (à faire après l'essai de la voix enregistrée).
+
+## 18. Audio : incident du 25 novembre 2026 et relance
+
+Le premier téléchargement complet a duré 5 h puis perdu ses fichiers : `zip` échoue (code 12) sur un dossier vide
+(packs prévus mais dont rien n'avait été téléchargé). Corrigé : packs vides ignorés (index et disque), artefact
+`audio-brut` conservé même en cas d'échec, mots de rang > 30 000 écartés (`--rang-max`), budget de 320 min.
+Constat du premier essai : 25 709 mots candidats, 3 734 fichiers pour le cœur (70 Mo), débit ≈ 0,8 fichier/s.
+Relancé le 25 novembre 2026 (22 h 45 UTC) ; à son terme : `build.yml` avec `audio = oui`.
