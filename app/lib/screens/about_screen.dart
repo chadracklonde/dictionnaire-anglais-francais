@@ -35,7 +35,7 @@ class _AboutScreenState extends State<AboutScreen> {
         children: [
           Text('Anglais Français', style: theme.textTheme.headlineSmall),
           const SizedBox(height: 4),
-          const Text('Version $appVersion · par Chadrack Londe, Kindu (RDC)'),
+          const Text('Version $appVersion'),
           const SizedBox(height: 16),
           FutureBuilder<Map<String, int>>(
             future: _chiffres,
@@ -53,6 +53,20 @@ class _AboutScreenState extends State<AboutScreen> {
           const Text(
             'Application 100 % hors ligne : aucun compte, aucune publicité, aucune donnée '
             'envoyée. Vos favoris et votre historique restent sur cet appareil.',
+          ),
+          const SizedBox(height: 20),
+          Text('Concepteur', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 8),
+          const Text(
+            'Conçue et développée par Chadrack Londe, à Kindu (République démocratique du '
+            'Congo). Une question, une erreur dans un mot, une idée ? Le projet est ouvert : '
+            'vous pouvez le signaler sur la page du code source.',
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.code_rounded),
+            label: const Text('Code source (GitHub)'),
+            onPressed: () => _ouvrir('https://github.com/chadracklonde/dictionnaire-anglais-francais'),
           ),
           const SizedBox(height: 20),
           Text('Sources et licences', style: theme.textTheme.titleMedium),

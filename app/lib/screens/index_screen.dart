@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dicoenfr_engine/dicoenfr_engine.dart';
 import 'package:flutter/material.dart';
 
@@ -18,6 +20,9 @@ class _IndexScreenState extends State<IndexScreen> {
   static const String _lettres = 'abcdefghijklmnopqrstuvwxyz';
 
   final _defilement = ScrollController();
+  final _recherche = TextEditingController();
+  Timer? _delai;
+  List<String> _suggestions = const [];
   String _lettre = 'a';
   final List<EntreeIndex> _entrees = [];
   bool _charge = false;
@@ -40,8 +45,32 @@ class _IndexScreenState extends State<IndexScreen> {
 
   @override
   void dispose() {
+    _delai?.cancel();
+    _recherche.dispose();
     _defilement.dispose();
     super.dispose();
+  }
+
+  void _surSaisie(String texte) {
+    setState(() {});
+    _delai?.cancel();
+    if (texte.trim().isEmpty) {
+      setState(() => _suggestions = const []);
+      return;
+    }
+    _delai = Timer(const Duration(milliseconds: 180), () async {
+      if (!mounted) return;
+      final liste = await AppScope.of(context).moteur.suggerer(texte);
+      if (!mounted || _recherche.text != texte) return;
+      setState(() => _suggestions = liste);
+    });
+  }
+
+  void _chercher(String texte) {
+    final t = texte.trim();
+    if (t.isEmpty) return;
+    FocusScope.of(context).unfocus();
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => ResultScreen(requete: t)));
   }
 
   Future<void> _recommencer(String lettre) async {
@@ -81,6 +110,50 @@ class _IndexScreenState extends State<IndexScreen> {
       appBar: AppBar(title: const Text('Index')),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: TextField(
+              controller: _recherche,
+              textInputAction: TextInputAction.search,
+              autocorrect: false,
+              enableSuggestions: false,
+              decoration: InputDecoration(
+                hintText: 'Un mot anglais ou français',
+                prefixIcon: const Icon(Icons.search_rounded),
+                suffixIcon: _recherche.text.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: 'Effacer',
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => setState(() {
+                          _recherche.clear();
+                          _suggestions = const [];
+                        }),
+                      ),
+                border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(28))),
+              ),
+              onChanged: _surSaisie,
+              onSubmitted: _chercher,
+            ),
+          ),
+          if (_suggestions.isNotEmpty && _recherche.text.trim().isNotEmpty)
+            Expanded(
+              child: ListView(
+                padding: padPage(context, v: 0),
+                children: [
+                  for (final s in _suggestions)
+                    ListTile(
+                      dense: true,
+                      title: Text(s),
+                      onTap: () {
+                        _recherche.text = s;
+                        _chercher(s);
+                      },
+                    ),
+                ],
+              ),
+            )
+          else ...[
           SizedBox(
             height: 56,
             child: ListView(
@@ -124,6 +197,7 @@ class _IndexScreenState extends State<IndexScreen> {
                     },
                   ),
           ),
+          ],
         ],
       ),
     );
