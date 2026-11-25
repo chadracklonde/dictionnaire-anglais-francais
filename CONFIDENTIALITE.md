@@ -28,6 +28,15 @@ Certaines actions, que **vous** déclenchez, passent par une autre application d
 - **Partager** : le menu de partage de votre téléphone s'ouvre avec le texte de la fiche ; vous choisissez le destinataire.
 - **Signaler une erreur** et les liens de l'écran « À propos » : votre navigateur s'ouvre sur une page web (GitHub, Wikimédia, Creative Commons). Ces sites ont leur propre politique de confidentialité.
 
+## Prononciation enregistrée (facultative)
+
+Les 5 000 mots les plus courants ont une voix enregistrée (accent américain), livrée avec l'application. Les enregistrements des autres mots forment des **packs facultatifs**, que vous pouvez télécharger dans les réglages.
+
+- Le téléchargement est effectué **par Google Play**, le service de votre téléphone, et non par l'application : l'application elle-même n'a toujours aucune permission Internet et n'envoie rien. Google Play traite ce téléchargement selon sa propre politique de confidentialité.
+- Pour que Google Play puisse le faire en arrière-plan, l'application déclare les autorisations Android « service de premier plan » et « synchronisation de données ». Elles ne donnent accès à aucune de vos données.
+- Les voix viennent de contributeurs du Wiktionnaire (Wikimedia Commons) ; l'auteur et la licence de chaque enregistrement s'affichent sous la fiche du mot.
+- Sans pack, ou sans Google Play, la voix de synthèse de votre téléphone est utilisée.
+
 ## Contenu et licences
 
 Les mots, définitions et traductions viennent du Wiktionnaire, publié sous licence Creative Commons Attribution – Partage dans les mêmes conditions 4.0 (CC BY-SA 4.0). Le détail est dans l'écran « À propos ».
@@ -38,7 +47,7 @@ L'application ne collecte aucune donnée, y compris sur les enfants.
 
 ## Modifications
 
-Si une version future devait envoyer des données (par exemple pour télécharger un pack audio), cette politique serait mise à jour **avant** sa publication, et la nouvelle version ne serait publiée qu'ensuite.
+Si une version future devait envoyer des données ou demander la permission Internet, cette politique serait mise à jour **avant** sa publication, et la nouvelle version ne serait publiée qu'ensuite.
 
 ## Contact
 

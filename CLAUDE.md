@@ -2,7 +2,7 @@
 
 > Lu automatiquement par Claude Code à l'ouverture du dépôt. **Aucun mot de passe ici** : les secrets
 > sont décrits (où ils sont, comment ils s'appellent), jamais écrits.
-> Dernière mise à jour : 9 novembre 2026 · état : phases 0 à 2 faites (§9-§11), phase 3 compilée (§12), phase 4 compilée par la CI (§13), rien de publié.
+> Dernière mise à jour : 25 novembre 2026 · état : phases 0 à 4 faites, lots 1 à 6 et 8 compilés par la CI (§15), lot 7 (audio) en cours (§16), rien de publié. Travail sur la branche `claude/hopeful-shannon-ohokkd` (PR en brouillon).
 
 ## 1. En bref
 
@@ -240,3 +240,35 @@ Validation : `build.yml` (une seule exécution), puis essai sur téléphone et s
   le foreground adaptatif reste dans la zone sûre de 66 %.
 - Les commits se font au nom de Chadrack Londe (pas de mention de Claude).
 - Reste pour la phase 5 : `CONFIDENTIALITE.md`, fiche Play Store, audio par Play Asset Delivery.
+
+## 15. Lots de fonctionnalités (25 novembre 2026, version 0.7.0+7)
+
+Branche `claude/hopeful-shannon-ohokkd`, PR en brouillon ; chaque lot a été compilé par `build.yml` (vert).
+- **Lot 1** : `CONFIDENTIALITE.md`, `PLAYSTORE.md` (textes de la fiche, formulaire « sécurité des données »).
+- **Lot 2** : barre de navigation (5 onglets : Accueil, Index, Réviser, Conjugaison, Favoris), saut rapide dans l'index, annuler après suppression, appui long sur un mot (`widgets/menu_mot.dart`).
+- **Lot 3** : synonymes, contraires, dérivés (table `relations`), verbes à particule (requête sur `mots`), faux amis (`tools/data/faux_amis.tsv`, table `faux_amis`), exemples sur la fiche. **Base reconstruite** (217 Mo).
+- **Lot 4** : corrections de fautes de frappe (`engine/lib/src/orthographe.dart`), motifs `inter*` / `c?t`, recherche par définition (LIKE, sans index), Ctrl+K.
+- **Lot 5** : notes, listes de mots, export/import (texte copié) dans `UserStore`.
+- **Lot 6** : révision à répétition espacée (`engine/lib/src/revision.dart`, boîtes de Leitner), quiz, listes de vocabulaire (`app/lib/data/themes.dart`).
+- **Lot 8** : barre latérale et deux volets au-dessus de 720 px (`widgets/mise_en_page.dart`), Ctrl+1 à Ctrl+5.
+- Les workflows `data.yml` et `build.yml` ne se lancent que par l'API sur une branche **si le fichier existe sur `main`** : toute nouvelle option va dans un workflow existant.
+- GitHub renvoie parfois `HTTP 500/502` à la publication d'une release : ce n'est pas le code, relancer.
+
+## 16. Lot 7 — audio (décisions de Chadrack, 25 novembre 2026)
+
+Décisions : **accent américain seulement** ; les **5 000 mots les plus courants** (rang ≤ 5000) livrés avec l'application ;
+le reste en packs facultatifs ; permission Internet acceptée **mais inutile** : Play Asset Delivery ne l'exige pas
+(manifeste vérifié par la CI : seules `FOREGROUND_SERVICE` et `FOREGROUND_SERVICE_DATA_SYNC` apparaissent).
+- `tools/audio_us.py` : un enregistrement américain par mot, auteur et licence relevés par l'API de Commons
+  (CC BY, CC BY-SA, CC0, domaine public seulement), téléchargement prudent (2 fils, 0,3 s, Retry-After), packs
+  `audio_us_core` (livré à l'installation) puis `audio_us_1`, `_2`… (à la demande, 350 Mo au plus).
+  Lancé par `data.yml` (option `audio` : non / essai / complet) ; publie dans la release **`audio-us`**
+  (zips + `audio_index.json`). Débit constaté : environ 1 fichier par seconde ; le budget de 290 min coupe le
+  téléchargement et les mots les moins courants restent sans enregistrement (voix du téléphone).
+- `tools/android_audio.py` + `tools/android/AudioPacksPlugin.kt` : ajoutent les modules `asset-pack` au projet
+  généré par `flutter create`, la bibliothèque `asset-delivery` et le plugin Kotlin (lecture, état, téléchargement).
+  `build.yml` option `audio: oui`. Les packs ne sont **que dans l'AAB** : l'APK installé à la main n'a pas de voix
+  enregistrée (synthèse vocale). Pour l'essayer : test interne dans la Play Console.
+- Dart : `data/audio_index.dart`, `audio_packs.dart`, `audio_lecture.dart`, `widgets/packs_audio.dart` (réglages).
+- Reste : essai sur téléphone depuis Google Play (test interne), déclaration du service de premier plan « synchronisation
+  de données » dans la Play Console, Windows et macOS sans enregistrements.
