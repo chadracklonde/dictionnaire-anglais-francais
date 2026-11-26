@@ -5,7 +5,7 @@ import '../app.dart';
 import '../widgets/mise_en_page.dart';
 
 /// Sorte de quiz : le mot anglais à traduire, le mot français à retrouver en anglais, ou les faux amis.
-enum ModeQuiz { anglaisFrancais, francaisAnglais, fauxAmis }
+enum ModeQuiz { anglaisFrancais, francaisAnglais, fauxAmis, expressions, trous }
 
 class _Question {
   const _Question(this.cle, this.intitule, this.bonne, this.options, [this.explication = '']);
@@ -45,9 +45,12 @@ class _QuizScreenState extends State<QuizScreen> {
 
   Future<void> _preparer() async {
     final services = AppScope.of(context);
-    final questions = widget.mode == ModeQuiz.fauxAmis
-        ? await _questionsFauxAmis(services)
-        : await _questionsMots(services);
+    final questions = switch (widget.mode) {
+      ModeQuiz.fauxAmis => await _questionsFauxAmis(services),
+      ModeQuiz.expressions => await _questionsExpressions(services),
+      ModeQuiz.trous => await _questionsTrous(services),
+      _ => await _questionsMots(services),
+    };
     if (!mounted) return;
     setState(() => _questions = questions);
   }
@@ -77,6 +80,87 @@ class _QuizScreenState extends State<QuizScreen> {
         options.toList()..shuffle(),
         'Piège : « ${f.mot} » ne veut pas dire « ${f.piege} ».',
       ));
+    }
+    return questions;
+  }
+
+  Future<List<_Question>> _questionsExpressions(AppServices services) async {
+    List<LigneExpression> expressions;
+    try {
+      expressions = await services.source.expressionsCureesHasard(_nombre + 6);
+    } catch (_) {
+      expressions = const [];
+    }
+    expressions = [for (final e in expressions) if (e.fr.isNotEmpty) e];
+    if (expressions.length < 4) return const [];
+    final questions = <_Question>[];
+    for (var i = 0; i < expressions.length && questions.length < _nombre; i++) {
+      final e = expressions[i];
+      final bonne = e.fr;
+      final options = <String>{bonne};
+      for (var k = 1; k < expressions.length && options.length < 4; k++) {
+        options.add(expressions[(i + k) % expressions.length].fr);
+      }
+      if (options.length < 3) continue;
+      questions.add(_Question(
+        null,
+        'Que veut dire « ${e.mot.mot} » ?',
+        bonne,
+        options.toList()..shuffle(),
+        e.litteral.isEmpty ? '' : 'Mot à mot : ${e.litteral}.',
+      ));
+    }
+    return questions;
+  }
+
+  /// Phrases d'exemple dont on a retiré un mot courant : on choisit le bon parmi quatre.
+  Future<List<_Question>> _questionsTrous(AppServices services) async {
+    final questions = <_Question>[];
+    final pool = <String>{};
+    for (var lot = 0; lot < 5 && questions.length < _nombre; lot++) {
+      List<String> candidats;
+      try {
+        candidats = await services.source.motsHasard(40);
+      } catch (_) {
+        break;
+      }
+      pool.addAll([for (final c in candidats) if (c.length >= 4) c.toLowerCase()]);
+      for (final mot in candidats) {
+        if (questions.length >= _nombre) break;
+        if (mot.length < 4) continue;
+        final trouves = await services.source.motsParRecherche(plier(mot));
+        if (trouves.isEmpty) continue;
+        // Pas de petits mots-outils (the, that, he…) : on exige un rang d'au moins 150 quand il est connu.
+        final rangs = [for (final t in trouves) if (t.rang != null) t.rang!];
+        if (rangs.isNotEmpty && rangs.reduce((a, b) => a < b ? a : b) < 150) continue;
+        final motif = RegExp('\\b${RegExp.escape(mot)}\\b', caseSensitive: false);
+        String? phrase;
+        Fiche? source;
+        for (final t in trouves) {
+          final fiche = await services.moteur.fiche(t);
+          for (final x in fiche.sens) {
+            // Une parenthèse « (Compare …) » donnerait la réponse : on l'enlève avant de choisir.
+            final propre = x.exemple.replaceAll(RegExp(r'\s*\([^)]*\)'), '').trim();
+            if (propre.isNotEmpty && propre.length <= 90 && motif.hasMatch(propre)) {
+              phrase = propre;
+              source = fiche;
+              break;
+            }
+          }
+          if (phrase != null) break;
+        }
+        if (phrase == null || source == null || pool.length < 4) continue;
+        final autres = pool.where((c) => c != mot.toLowerCase()).toList()..shuffle();
+        final options = <String>{mot.toLowerCase(), ...autres.take(3)};
+        final equivalent = source.equivalents.isEmpty ? '' : source.equivalents.first.fr;
+        questions.add(_Question(
+          null,
+          'Complétez : « ${phrase.replaceFirst(motif, '_____')} »',
+          mot.toLowerCase(),
+          options.toList()..shuffle(),
+          '« $phrase »${equivalent.isEmpty ? '' : ' — $mot : $equivalent'}',
+        ));
+      }
     }
     return questions;
   }
@@ -149,6 +233,8 @@ class _QuizScreenState extends State<QuizScreen> {
           ModeQuiz.anglaisFrancais => 'Quiz',
           ModeQuiz.francaisAnglais => 'Quiz français → anglais',
           ModeQuiz.fauxAmis => 'Quiz des faux amis',
+          ModeQuiz.expressions => 'Quiz des expressions',
+          ModeQuiz.trous => 'Phrases à trous',
         }),
       ),
       body: questions == null

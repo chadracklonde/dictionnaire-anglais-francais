@@ -113,6 +113,28 @@ CREATE TABLE IF NOT EXISTS faux_amis (
     vrai  TEXT NOT NULL                       -- le vrai sens (« en fait, vraiment »)
 );
 
+-- Expressions anglaises de plusieurs mots (idiomes, phrases courantes ou utiles, proverbes, verbes
+-- à particule). type : idiome, courante, utile, proverbe, particule. registre : vide, familier,
+-- argot, vulgaire (vulgaire ou injurieux), vieilli. curee = 1 : écrite à la main (tools/data/expressions_*.tsv).
+CREATE TABLE IF NOT EXISTS expressions (
+    mot_id     INTEGER PRIMARY KEY,
+    type       TEXT NOT NULL,
+    registre   TEXT NOT NULL DEFAULT '',
+    litteral   TEXT NOT NULL DEFAULT '',      -- sens mot à mot (expressions soignées)
+    fr         TEXT NOT NULL DEFAULT '',      -- équivalent français recommandé (expressions soignées)
+    theme      TEXT NOT NULL DEFAULT '',      -- voyage, restaurant… (phrases utiles)
+    exemple    TEXT NOT NULL DEFAULT '',
+    curee      INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS ix_expressions_type ON expressions(type, curee);
+
+-- Index inversé : mot (plié) → expressions qui le contiennent.
+CREATE TABLE IF NOT EXISTS expression_mots (
+    mot     TEXT NOT NULL,
+    expr_id INTEGER NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_expression_mots ON expression_mots(mot, expr_id);
+
 CREATE TABLE IF NOT EXISTS meta (
     cle    TEXT PRIMARY KEY,
     valeur TEXT NOT NULL

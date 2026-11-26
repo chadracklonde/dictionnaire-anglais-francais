@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import 'data/rappel.dart';
 import 'data/db_installer.dart';
 import 'data/executeur_sqflite.dart';
 import 'data/user_store.dart';
@@ -13,7 +14,7 @@ import 'screens/install_screen.dart';
 import 'theme.dart';
 
 /// Version affichée dans « À propos » (à garder alignée sur pubspec.yaml).
-const String appVersion = '0.8.2';
+const String appVersion = '0.10.0';
 
 /// Services partagés par tous les écrans.
 class AppServices {
@@ -96,12 +97,14 @@ class _DictionnaireAppState extends State<DictionnaireApp> {
       final source = SourceSql(ExecuteurSqflite(db));
       final prefs = await SharedPreferences.getInstance();
       if (!mounted) return;
+      final moteur = Moteur(source);
+      final user = UserStore(prefs);
+      moteur.afficherVulgaire = user.afficherVulgaire;
+      // Remet l'alarme du rappel à chaque lancement (elle ne coûte rien si elle existe déjà).
+      if (user.rappelActif) Rappel.planifier(user.rappelMinutes);
+      user.addListener(() => moteur.afficherVulgaire = user.afficherVulgaire);
       setState(() {
-        _services = AppServices(
-          moteur: Moteur(source),
-          source: source,
-          user: UserStore(prefs),
-        );
+        _services = AppServices(moteur: moteur, source: source, user: user);
       });
     } catch (e) {
       if (!mounted) return;

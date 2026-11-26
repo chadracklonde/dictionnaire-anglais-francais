@@ -31,7 +31,7 @@ class Requetes(unittest.TestCase):
         for ed, name in (("en", "sample_base_en.jsonl"), ("fr", "sample_base_fr.jsonl")):
             with open(os.path.join(HERE, name), "rb") as f:
                 b.lire(conn, f.readlines(), ed)
-        b.finaliser(conn, freq, seuil_rang=8)
+        b.finaliser(conn, freq, seuil_rang=8, expressions=None)
         conn.close()
         cls.conn = sqlite3.connect(db)
         cls.sql = lire_requetes()
@@ -52,7 +52,8 @@ class Requetes(unittest.TestCase):
             "requeteMotsParRecherche", "requeteLemmesDeForme", "requeteContraction", "requeteEquivalents",
             "requeteSens", "requeteDefinitionsFr", "requeteFormes", "requeteAudio",
             "requetePrononciations", "requeteAnglaisParFrancais", "requeteSuggestionsAnglais",
-            "requeteSuggestionsFrancais", "requeteRelations", "requeteMotsHasard", "requeteFauxAmisHasard", "requeteEquivalentsHasard", "requeteMotsProchesAnglais", "requeteMotsProchesFrancais", "requeteMotsParMotif",
+            "requeteSuggestionsFrancais", "requeteRelations", "requeteInfoExpression", "requeteExpressions", "requeteExpressionsAvec",
+            "requeteNombreExpressionsCurees", "requeteExpressionCuree", "requeteExpressionsCureesHasard", "requeteMotsHasard", "requeteFauxAmisHasard", "requeteEquivalentsHasard", "requeteMotsProchesAnglais", "requeteMotsProchesFrancais", "requeteMotsParMotif",
             "requeteParDefinitionAnglaise", "requeteParDefinitionFrancaise", "requeteVerbesAParticule", "requeteFauxAmi",
             "requeteIndexAnglais", "requeteChiffres", "requeteMeta"}
         self.assertEqual(set(self.sql), attendues)
@@ -135,6 +136,11 @@ class Requetes(unittest.TestCase):
         for _ in range(20):
             for (mot,) in self.run_q("requeteMotsHasard", 3):
                 self.assertNotIn(" ", mot)
+        # quel que soit le point de départ tiré au hasard, on revient au début de la table : jamais de tirage vide
+        disponibles = self.run_q("requeteMotsHasard", 1000)
+        self.assertGreater(len(disponibles), 0)
+        for _ in range(60):
+            self.assertEqual(len(self.run_q("requeteMotsHasard", min(2, len(disponibles)))), min(2, len(disponibles)))
         faux = self.run_q("requeteFauxAmisHasard", 100)
         self.assertGreaterEqual(len(faux), 40)
         self.assertEqual(len(self.run_q("requeteFauxAmisHasard", 3)), 3)

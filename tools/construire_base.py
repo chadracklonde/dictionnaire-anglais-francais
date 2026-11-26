@@ -23,6 +23,7 @@ du script n'est pas dans le chemin d'import).
 import argparse
 import collections
 import datetime
+import glob
 import gzip
 import json
 import os
@@ -42,6 +43,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SCHEMA = os.path.join(HERE, "schema.sql")
 CONTRACTIONS = os.path.join(HERE, "data", "contractions.tsv")
 FAUX_AMIS = os.path.join(HERE, "data", "faux_amis.tsv")
+EXPRESSIONS = os.path.join(HERE, "data", "expressions_*.tsv")
 VERSION_SCHEMA = "1"
 
 MAX_SENS = 8          # définitions anglaises gardées par mot
@@ -441,6 +443,153 @@ def charger_faux_amis(conn, path):
     return n
 
 
+# ---------------------------------------------------------------- expressions
+
+TYPES_EXPRESSION = {"idiome", "courante", "utile", "proverbe", "particule"}
+REGISTRES = ("vulgaire", "argot", "familier", "vieilli")  # du plus au moins « fort »
+PARTICULES = {"up", "down", "out", "off", "on", "in", "over", "away", "back", "around", "about", "along",
+              "through", "apart", "aside", "by", "forward", "ahead", "across", "after", "at", "into", "onto",
+              "with", "for", "to", "from", "together", "behind", "under", "down", "round"}
+MOTS_OUTILS = {"a", "an", "the", "to", "of", "in", "on", "at", "for", "with", "by", "and", "or", "but", "as",
+               "is", "it", "its", "be", "are", "was", "were", "you", "your", "i", "my", "me", "he", "she",
+               "we", "they", "one", "ones", "someone", "somebody", "something", "s", "t", "that", "this",
+               "do", "does", "not", "no", "if", "so", "up", "out", "off"}
+# Catégories du Wiktionnaire (categories_wiktionnaire.py) → niveau de langue.
+CATEGORIES_REGISTRE = (
+    ("vulgaire", ("english_vulgarities", "english_offensive_terms", "english_derogatory_terms",
+                  "english_ethnic_slurs")),
+    ("argot", ("english_slang",)),
+    ("familier", ("english_informal_terms",)),
+    ("vieilli", ("english_dated_terms", "english_obsolete_terms")),
+)
+# Balises de sens de l'édition anglaise (colonne sens.etiquettes) → niveau de langue.
+BALISES_REGISTRE = (
+    ("vulgaire", ("vulgar", "offensive", "derogatory", "slur", "ethnic")),
+    ("argot", ("slang",)),
+    ("familier", ("informal", "colloquial")),
+    ("vieilli", ("dated", "archaic", "obsolete")),
+)
+
+
+def charger_categories(dossier):
+    """Titres normalisés de chaque catégorie téléchargée : {nom_de_fichier_sans_extension: ensemble}."""
+    cats = {}
+    if not dossier or not os.path.isdir(dossier):
+        return cats
+    for nom in os.listdir(dossier):
+        if nom.endswith(".txt"):
+            with open(os.path.join(dossier, nom), encoding="utf-8") as f:
+                cats[nom[:-4]] = {norm(ligne) for ligne in f.read().split("\n") if ligne.strip()}
+    return cats
+
+
+def _mots_de(texte):
+    return [m for m in re.split(r"[^a-z0-9']+", fold(texte)) if m]
+
+
+def type_expression(mot, nature, cats):
+    """Type d'une entrée de plusieurs mots, ou None si ce n'est pas une expression (nom composé…)."""
+    cle = norm(mot)
+    mots = cle.split(" ")
+    if len(mots) < 2 or len(mots) > 9 or len(cle) > 80 or nature in ("name", "prefix", "suffix", "?"):
+        return None
+    if nature == "proverb" or cle in cats.get("english_proverbs", ()):
+        return "proverbe"
+    if cle in cats.get("english_phrasal_verbs", ()) or (
+            nature == "verb" and len(mots) == 2 and mots[1] in PARTICULES):
+        return "particule"
+    if cle in cats.get("english_idioms", ()):
+        return "idiome"
+    if nature in ("phrase", "prep_phrase", "intj", "adv", "prep", "conj"):
+        return "courante"
+    if nature == "verb":
+        return "idiome"  # verbe de plusieurs mots qui n'est pas à particule : kick the bucket, spill the beans
+    return None  # noms et adjectifs composés (ice cream, high school) : pas des expressions
+
+
+def registre_expression(mot, balises, cats):
+    cle = norm(mot)
+    for registre, noms in CATEGORIES_REGISTRE:
+        if any(cle in cats.get(n, ()) for n in noms):
+            return registre
+    texte = (balises or "").lower()
+    for registre, mots in BALISES_REGISTRE:
+        if any(m in texte for m in mots):
+            return registre
+    return ""
+
+
+def classer_expressions(conn, cats):
+    """Remplit `expressions` d'après la nature, les catégories du Wiktionnaire et les balises. Renvoie un compteur."""
+    cur = conn.cursor()
+    balises = {r[0]: r[1] for r in cur.execute(
+        "SELECT s.mot_id, group_concat(s.etiquettes, ',') FROM sens s JOIN mots m ON m.id = s.mot_id "
+        "WHERE m.mot LIKE '% %' GROUP BY s.mot_id")}
+    compte = collections.Counter()
+    lignes = cur.execute(
+        "SELECT m.id, m.mot, m.nature FROM mots m WHERE m.mot LIKE '% %' "
+        "AND EXISTS (SELECT 1 FROM traductions t WHERE t.mot_id = m.id)").fetchall()
+    ajouts = []
+    for mot_id, mot, nature in lignes:
+        type_ = type_expression(mot, nature, cats)
+        if type_ is None:
+            continue
+        reg = registre_expression(mot, balises.get(mot_id, ""), cats)
+        ajouts.append((mot_id, type_, reg))
+        compte[type_] += 1
+        if reg:
+            compte["registre_" + reg] += 1
+    cur.executemany("INSERT OR IGNORE INTO expressions(mot_id, type, registre) VALUES (?, ?, ?)", ajouts)
+    return compte
+
+
+def charger_expressions_curees(conn, motif):
+    """Expressions écrites à la main : expression <TAB> équivalent(s) <TAB> sens littéral <TAB> type <TAB>
+    thème <TAB> registre <TAB> exemple. Une expression absente de la base est créée. Renvoie le nombre."""
+    cur = conn.cursor()
+    n = 0
+    for chemin in sorted(glob.glob(motif)):
+        with open(chemin, encoding="utf-8") as f:
+            for numero, ligne in enumerate(f, 1):
+                ligne = ligne.rstrip("\n")
+                if not ligne.strip() or ligne.lstrip().startswith("#"):
+                    continue
+                cols = [c.strip() for c in ligne.split("\t")] + [""] * 7
+                expression, fr, litteral, type_, theme, registre, exemple = cols[:7]
+                if not expression or not fr or type_ not in TYPES_EXPRESSION or (
+                        registre and registre not in REGISTRES):
+                    raise ValueError("%s ligne %d : expression, équivalent et type valides attendus"
+                                     % (chemin, numero))
+                ligne_mot = cur.execute(
+                    "SELECT m.id FROM mots m WHERE m.mot_recherche = ? ORDER BY "
+                    "EXISTS (SELECT 1 FROM traductions t WHERE t.mot_id = m.id) DESC, m.id LIMIT 1",
+                    (fold(expression),)).fetchone()
+                mot_id = ligne_mot[0] if ligne_mot else trouver_ou_creer(cur, expression, "phrase", "en")
+                principal = clip(fr.split(";")[0], 120)
+                for variante in fr.split(";"):
+                    ajouter_traduction(cur, mot_id, variante.strip(), "", "en+fr")
+                cur.execute(
+                    "INSERT OR REPLACE INTO expressions(mot_id, type, registre, litteral, fr, theme, exemple, curee)"
+                    " VALUES (?, ?, ?, ?, ?, ?, ?, 1)",
+                    (mot_id, type_, registre, clip(litteral, 160), principal, theme, clip(exemple, 200)))
+                n += 1
+    return n
+
+
+def indexer_expressions(conn):
+    """Index inversé : chaque mot (hors mots-outils) d'une expression renvoie à elle."""
+    cur = conn.cursor()
+    ajouts = set()
+    for expr_id, recherche in cur.execute(
+            "SELECT e.mot_id, m.mot_recherche FROM expressions e JOIN mots m ON m.id = e.mot_id").fetchall():
+        for mot in _mots_de(recherche):
+            mot = mot.strip("'")
+            if len(mot) >= 2 and mot not in MOTS_OUTILS:
+                ajouts.add((mot, expr_id))
+    cur.executemany("INSERT OR IGNORE INTO expression_mots(mot, expr_id) VALUES (?, ?)", sorted(ajouts))
+    return len(ajouts)
+
+
 def deriver_renvois(conn):
     """Complète les renvois « forme -> mot de base » que l'import n'a pas vus.
 
@@ -485,7 +634,7 @@ def deriver_renvois(conn):
 
 
 def finaliser(conn, frequence=None, contractions=CONTRACTIONS, seuil_rang=SEUIL_RANG_DEFAUT,
-              faux_amis=FAUX_AMIS):
+              faux_amis=FAUX_AMIS, categories=None, expressions=EXPRESSIONS):
     """Contractions, rangs, élagage, index. Renvoie un dictionnaire de chiffres."""
     res = {}
     cur = conn.cursor()
@@ -502,6 +651,12 @@ def finaliser(conn, frequence=None, contractions=CONTRACTIONS, seuil_rang=SEUIL_
 
     res["renvois_par_formes"], res["renvois_par_definitions"] = deriver_renvois(conn)
 
+    # Expressions : classées d'après la nature et les catégories du Wiktionnaire, puis celles écrites à la main.
+    cats = charger_categories(categories)
+    res["categories_wiktionnaire"] = {k: len(v) for k, v in sorted(cats.items())}
+    res["expressions_classees"] = dict(classer_expressions(conn, cats))
+    res["expressions_curees"] = charger_expressions_curees(conn, expressions) if expressions else 0
+
     # Élagage : un mot sans équivalent ni définition française n'est gardé que s'il est courant.
     avant = cur.execute("SELECT COUNT(*) FROM mots").fetchone()[0]
     cur.execute(
@@ -510,7 +665,8 @@ def finaliser(conn, frequence=None, contractions=CONTRACTIONS, seuil_rang=SEUIL_
         " WHERE NOT EXISTS (SELECT 1 FROM traductions t WHERE t.mot_id = m.id)"
         "   AND NOT EXISTS (SELECT 1 FROM definitions_fr d WHERE d.mot_id = m.id)"
         "   AND (m.rang IS NULL OR m.rang > ?))", (seuil_rang,))
-    for table in ("sens", "definitions_fr", "traductions", "formes", "audio", "prononciations", "relations"):
+    for table in ("sens", "definitions_fr", "traductions", "formes", "audio", "prononciations", "relations",
+                  "expressions"):
         cur.execute("DELETE FROM %s WHERE mot_id NOT IN (SELECT id FROM mots)" % table)
     cur.execute("DELETE FROM renvois WHERE NOT EXISTS "
                 "(SELECT 1 FROM mots WHERE mots.mot_norm = renvois.lemme_norm)")
@@ -524,6 +680,7 @@ def finaliser(conn, frequence=None, contractions=CONTRACTIONS, seuil_rang=SEUIL_
     cur.execute("CREATE INDEX IF NOT EXISTS ix_renvois_lemme ON renvois(lemme_norm)")
     cur.execute("CREATE INDEX IF NOT EXISTS ix_mots_rang ON mots(rang)")
     cur.execute("CREATE INDEX IF NOT EXISTS ix_relations_mot ON relations(mot_id)")
+    res["expression_mots"] = indexer_expressions(conn)
 
     meta = {
         "version_schema": VERSION_SCHEMA,
@@ -611,6 +768,9 @@ def rapport(conn, frequence=None):
     r["contractions"] = _un(cur, "SELECT COUNT(*) FROM contractions")
     r["relations"] = _un(cur, "SELECT COUNT(*) FROM relations")
     r["faux_amis"] = _un(cur, "SELECT COUNT(*) FROM faux_amis")
+    r["expressions"] = _un(cur, "SELECT COUNT(*) FROM expressions")
+    r["expressions_curees"] = _un(cur, "SELECT COUNT(*) FROM expressions WHERE curee = 1")
+    r["expressions_par_type"] = dict(cur.execute("SELECT type, COUNT(*) FROM expressions GROUP BY type").fetchall())
 
     anomalies = {
         "nature_inconnue": _un(cur, "SELECT COUNT(*) FROM mots WHERE nature = '?'"),
@@ -675,6 +835,9 @@ def rapport_markdown(r, taille=None):
         "| Contractions écrites à la main | %d |" % r["contractions"],
         "| Mots liés (synonymes, contraires, famille) | %d |" % r["relations"],
         "| Faux amis écrits à la main | %d |" % r["faux_amis"],
+        "| Expressions (dont %d écrites à la main) | %d (%s) |" % (
+            r["expressions_curees"], r["expressions"],
+            ", ".join("%s %d" % kv for kv in sorted(r["expressions_par_type"].items()))),
         "", "Natures : " + ", ".join("%s %d" % kv for kv in r["natures"].items()), "",
     ]
     if "couverture" in r:
@@ -715,6 +878,7 @@ def main(argv=None):
     p.add_argument("--contractions", default=CONTRACTIONS)
     p.add_argument("--seuil-rang", type=int, default=SEUIL_RANG_DEFAUT,
                    help="rang au-delà duquel un mot sans équivalent est supprimé")
+    p.add_argument("--categories", help="dossier des catégories du Wiktionnaire (categories_wiktionnaire.py)")
 
     p = sub.add_parser("rapport", help="rapport de qualité")
     p.add_argument("--db", required=True)
@@ -731,7 +895,7 @@ def main(argv=None):
         return 0
     if args.cmd == "finaliser":
         conn = ouvrir(args.db)
-        res = finaliser(conn, args.frequence, args.contractions, args.seuil_rang)
+        res = finaliser(conn, args.frequence, args.contractions, args.seuil_rang, categories=args.categories)
         conn.close()
         print("finalisation : %s" % res, file=sys.stderr)
         return 0

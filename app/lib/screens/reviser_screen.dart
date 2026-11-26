@@ -1,8 +1,11 @@
+import 'package:dicoenfr_engine/dicoenfr_engine.dart';
 import 'package:flutter/material.dart';
 
 import '../app.dart';
 import '../data/user_store.dart';
 import '../widgets/mise_en_page.dart';
+import 'dictee_screen.dart';
+import 'ecoute_screen.dart';
 import 'quiz_screen.dart';
 import 'revision_session_screen.dart';
 import 'statistiques_screen.dart';
@@ -26,6 +29,35 @@ class _ReviserScreenState extends State<ReviserScreen> {
     if (_portee == _favoris) return List.of(user.favoris);
     if (_portee == _tout || !user.listes.containsKey(_portee)) return user.motsARevoir();
     return List.of(user.listes[_portee]!);
+  }
+
+  /// Ajoute dix expressions soignées (pas encore dans la liste « Expressions ») à réviser.
+  Future<void> _apprendreExpressions(BuildContext context) async {
+    final services = AppScope.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    const nom = 'Expressions';
+    if (!services.user.listes.containsKey(nom)) await services.user.creerListe(nom);
+    List<LigneExpression> tirage;
+    try {
+      tirage = await services.source.expressionsCureesHasard(40);
+    } catch (_) {
+      tirage = const [];
+    }
+    var ajoutees = 0;
+    for (final e in tirage) {
+      if (ajoutees >= 10) break;
+      final cle = UserStore.cle(e.mot.mot, e.mot.nature);
+      if (services.user.estDansListe(nom, cle)) continue;
+      await services.user.basculerDansListe(nom, cle);
+      ajoutees++;
+    }
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text(ajoutees == 0
+            ? 'Aucune nouvelle expression à ajouter.'
+            : '$ajoutees expression(s) ajoutée(s) à la liste « Expressions » : choisissez-la plus haut pour la réviser.'),
+      ));
   }
 
   void _ouvrir(Widget ecran) =>
@@ -154,6 +186,19 @@ class _ReviserScreenState extends State<ReviserScreen> {
                 ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
+                  icon: const Icon(Icons.headphones_rounded),
+                  label: const Text('Écouter cette liste'),
+                  onPressed: () => _ouvrir(EcouteScreen(
+                    titre: _portee == _tout
+                        ? 'tous mes mots'
+                        : _portee == _favoris
+                            ? 'favoris'
+                            : _portee,
+                    cles: cles,
+                  )),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
                   icon: const Icon(Icons.quiz_rounded),
                   label: const Text('Quiz : anglais → français'),
                   onPressed: () => _ouvrir(QuizScreen(cles: cles)),
@@ -179,6 +224,36 @@ class _ReviserScreenState extends State<ReviserScreen> {
                 icon: const Icon(Icons.warning_amber_rounded),
                 label: const Text('Quiz des faux amis'),
                 onPressed: () => _ouvrir(const QuizScreen(mode: ModeQuiz.fauxAmis)),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.edit_rounded),
+                label: const Text('Phrases à trous'),
+                onPressed: () => _ouvrir(const QuizScreen(mode: ModeQuiz.trous)),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.hearing_rounded),
+                label: const Text('Dictée de mots'),
+                onPressed: () => _ouvrir(const DicteeScreen()),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.hearing_rounded),
+                label: const Text('Dictée d\'expressions'),
+                onPressed: () => _ouvrir(const DicteeScreen(expressions: true)),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.playlist_add_rounded),
+                label: const Text('Apprendre 10 expressions'),
+                onPressed: () => _apprendreExpressions(context),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.format_quote_rounded),
+                label: const Text('Quiz des expressions'),
+                onPressed: () => _ouvrir(const QuizScreen(mode: ModeQuiz.expressions)),
               ),
               const SizedBox(height: 8),
               OutlinedButton.icon(

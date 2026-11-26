@@ -150,6 +150,8 @@ class Fiche {
     this.relations = const [],
     this.particules = const [],
     this.fauxAmi,
+    this.expression,
+    this.expressionsAvec = const [],
   });
 
   final Mot mot;
@@ -175,11 +177,64 @@ class Fiche {
   /// Mise en garde si le mot est un faux ami.
   final FauxAmi? fauxAmi;
 
+  /// Si ce mot est une expression : ses infos (sens littéral, niveau de langue…).
+  final InfoExpression? expression;
+
+  /// Expressions qui contiennent ce mot (« Expressions avec … »).
+  final List<LigneExpression> expressionsAvec;
+
   List<String> _de(String type) => [for (final r in relations) if (r.type == type) r.mot];
 
   List<String> get synonymes => _de('syn');
   List<String> get contraires => _de('ant');
   List<String> get famille => _de('der');
+}
+
+/// Ce qu'on sait d'une expression : type (idiome, courante, utile, proverbe, particule), niveau de
+/// langue, sens littéral, équivalent recommandé, thème et exemple.
+class InfoExpression {
+  const InfoExpression({
+    required this.type,
+    this.registre = '',
+    this.litteral = '',
+    this.fr = '',
+    this.theme = '',
+    this.exemple = '',
+    this.curee = false,
+  });
+
+  final String type;
+  final String registre;
+  final String litteral;
+  final String fr;
+  final String theme;
+  final String exemple;
+
+  /// Écrite et relue à la main (équivalent recommandé fiable).
+  final bool curee;
+
+  bool get vulgaire => registre == 'vulgaire';
+}
+
+/// Une expression dans une liste : le mot (l'expression elle-même) et ses infos.
+class LigneExpression {
+  const LigneExpression({
+    required this.mot,
+    required this.type,
+    this.registre = '',
+    this.litteral = '',
+    this.curee = false,
+    this.fr = '',
+  });
+
+  final Mot mot;
+  final String type;
+  final String registre;
+  final String litteral;
+  final bool curee;
+
+  /// Équivalent français recommandé.
+  final String fr;
 }
 
 enum Direction { anglaisFrancais, francaisAnglais }

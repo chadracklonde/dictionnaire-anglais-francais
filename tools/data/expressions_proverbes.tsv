@@ -1,0 +1,95 @@
+# Proverbes anglais avec leur équivalent français (type « proverbe »).
+# Colonnes : expression <TAB> équivalent(s) français <TAB> sens littéral <TAB> proverbe <TAB> thème <TAB> registre <TAB> exemple
+better late than never	mieux vaut tard que jamais	mieux vaut en retard que jamais	proverbe	temps
+the early bird catches the worm	l'avenir appartient à ceux qui se lèvent tôt ; le monde appartient à ceux qui se lèvent tôt	l'oiseau matinal attrape le ver	proverbe	temps
+don't count your chickens before they hatch	il ne faut pas vendre la peau de l'ours avant de l'avoir tué	ne compte pas tes poussins avant qu'ils éclosent	proverbe	animaux
+too many cooks spoil the broth	trop de cuisiniers gâtent la sauce ; deux coqs dans un poulailler	trop de cuisiniers gâtent le bouillon	proverbe	nourriture
+a bird in the hand is worth two in the bush	un tiens vaut mieux que deux tu l'auras	un oiseau dans la main vaut deux dans le buisson	proverbe	animaux
+actions speak louder than words	les actes valent mieux que les paroles	les actes parlent plus fort que les mots	proverbe	communication
+all that glitters is not gold	tout ce qui brille n'est pas or	tout ce qui brille n'est pas de l'or	proverbe	divers
+a picture is worth a thousand words	une image vaut mille mots	une image vaut mille mots	proverbe	communication
+absence makes the heart grow fonder	l'absence fait grandir l'amour ; loin des yeux, près du cœur	l'absence rend le cœur plus affectueux	proverbe	emotions
+practice makes perfect	c'est en forgeant qu'on devient forgeron ; la pratique rend parfait	la pratique rend parfait	proverbe	travail
+rome wasn't built in a day	Paris ne s'est pas fait en un jour ; Rome ne s'est pas faite en un jour	Rome n'a pas été construite en un jour	proverbe	temps
+when in Rome, do as the Romans do	à Rome, fais comme les Romains	à Rome, fais comme les Romains	proverbe	divers
+the grass is always greener on the other side	l'herbe est toujours plus verte ailleurs	l'herbe est toujours plus verte de l'autre côté	proverbe	divers
+you can't judge a book by its cover	l'habit ne fait pas le moine	on ne juge pas un livre à sa couverture	proverbe	divers
+two wrongs don't make a right	deux erreurs ne font pas une vérité ; on ne répare pas une faute par une autre	deux torts ne font pas un droit	proverbe	divers
+a stitch in time saves nine	mieux vaut prévenir que guérir	un point à temps en économise neuf	proverbe	temps
+prevention is better than cure	mieux vaut prévenir que guérir	la prévention vaut mieux que le remède	proverbe	sante
+look before you leap	tourne sept fois ta langue dans ta bouche avant de parler ; réfléchis avant d'agir	regarde avant de sauter	proverbe	divers
+a rolling stone gathers no moss	pierre qui roule n'amasse pas mousse	une pierre qui roule n'amasse pas de mousse	proverbe	divers
+every cloud has a silver lining	après la pluie, le beau temps ; à quelque chose malheur est bon	chaque nuage a une doublure d'argent	proverbe	meteo
+it's no use crying over spilled milk	ce qui est fait est fait ; inutile de pleurer sur le lait renversé	inutile de pleurer sur le lait renversé	proverbe	nourriture
+you can't have your cake and eat it	on ne peut pas avoir le beurre et l'argent du beurre	tu ne peux pas avoir ton gâteau et le manger	proverbe	nourriture
+the proof of the pudding is in the eating	c'est à l'usage qu'on juge	la preuve du pudding est dans le fait de le manger	proverbe	nourriture
+birds of a feather flock together	qui se ressemble s'assemble	les oiseaux du même plumage se rassemblent	proverbe	animaux
+opposites attract	les contraires s'attirent	les contraires s'attirent	proverbe	emotions
+curiosity killed the cat	la curiosité est un vilain défaut	la curiosité a tué le chat	proverbe	animaux
+when the cat's away, the mice will play	quand le chat n'est pas là, les souris dansent	quand le chat est parti, les souris jouent	proverbe	animaux
+let sleeping dogs lie	il ne faut pas réveiller le chat qui dort	laissez les chiens endormis dormir	proverbe	animaux
+every dog has its day	chacun a son heure de gloire ; à chacun son tour	chaque chien a son jour	proverbe	animaux
+you can't teach an old dog new tricks	on ne apprend pas à un vieux singe à faire la grimace	on ne peut pas apprendre de nouveaux tours à un vieux chien	proverbe	animaux
+a barking dog never bites	chien qui aboie ne mord pas	un chien qui aboie ne mord jamais	proverbe	animaux
+the pen is mightier than the sword	la plume est plus forte que l'épée	la plume est plus puissante que l'épée	proverbe	communication
+knowledge is power	savoir, c'est pouvoir	la connaissance est un pouvoir	proverbe	travail
+honesty is the best policy	l'honnêteté est la meilleure politique	l'honnêteté est la meilleure politique	proverbe	divers
+the end justifies the means	la fin justifie les moyens	la fin justifie les moyens	proverbe	divers
+time is money	le temps, c'est de l'argent	le temps est de l'argent	proverbe	temps
+time heals all wounds	le temps guérit toutes les blessures	le temps guérit toutes les blessures	proverbe	temps
+there's no place like home	on n'est jamais si bien que chez soi	il n'y a pas d'endroit comme chez soi	proverbe	divers
+home is where the heart is	le foyer, c'est là où est le cœur	la maison est là où est le cœur	proverbe	emotions
+an apple a day keeps the doctor away	une pomme par jour éloigne le médecin	une pomme par jour tient le médecin à distance	proverbe	sante
+early to bed and early to rise makes a man healthy, wealthy and wise	le monde appartient à ceux qui se couchent tôt et se lèvent tôt	tôt au lit et tôt levé rend un homme sain, riche et sage	proverbe	sante
+health is better than wealth	la santé vaut mieux que la richesse	la santé vaut mieux que la richesse	proverbe	sante
+a friend in need is a friend indeed	c'est dans le besoin qu'on reconnaît ses vrais amis	un ami dans le besoin est un véritable ami	proverbe	emotions
+blood is thicker than water	les liens du sang sont plus forts que tout	le sang est plus épais que l'eau	proverbe	emotions
+love is blind	l'amour est aveugle	l'amour est aveugle	proverbe	emotions
+beauty is in the eye of the beholder	la beauté est dans l'œil de celui qui regarde ; les goûts et les couleurs ne se discutent pas	la beauté est dans l'œil de celui qui regarde	proverbe	divers
+there's no accounting for taste	les goûts et les couleurs ne se discutent pas	on ne peut pas expliquer les goûts	proverbe	divers
+one man's meat is another man's poison	ce qui est bon pour l'un est mauvais pour l'autre	la viande d'un homme est le poison d'un autre	proverbe	nourriture
+you reap what you sow	on récolte ce que l'on sème	tu récoltes ce que tu sèmes	proverbe	divers
+as you sow, so shall you reap	qui sème le vent récolte la tempête	comme tu sèmes, tu récolteras	proverbe	divers
+what goes around comes around	ce qu'on fait aux autres nous revient ; on récolte ce que l'on sème	ce qui tourne autour revient	proverbe	divers
+a leopard can't change its spots	chassez le naturel, il revient au galop	un léopard ne peut pas changer ses taches	proverbe	animaux
+old habits die hard	les vieilles habitudes ont la vie dure ; chassez le naturel, il revient au galop	les vieilles habitudes meurent dur	proverbe	divers
+a watched pot never boils	plus on attend, plus le temps paraît long	une marmite surveillée ne bout jamais	proverbe	temps
+good things come to those who wait	tout vient à point à qui sait attendre	les bonnes choses arrivent à ceux qui attendent	proverbe	temps
+patience is a virtue	la patience est une vertu	la patience est une vertu	proverbe	emotions
+slow and steady wins the race	rien ne sert de courir, il faut partir à point	lent et régulier gagne la course	proverbe	temps
+haste makes waste	qui trop se hâte reste en chemin ; hâte-toi lentement	la hâte fait le gaspillage	proverbe	temps
+a journey of a thousand miles begins with a single step	un voyage de mille lieues commence par un pas	un voyage de mille milles commence par un seul pas	proverbe	voyage
+many hands make light work	l'union fait la force ; à plusieurs, le travail est plus léger	beaucoup de mains font un travail léger	proverbe	travail
+two heads are better than one	deux avis valent mieux qu'un ; deux têtes valent mieux qu'une	deux têtes valent mieux qu'une	proverbe	travail
+united we stand, divided we fall	l'union fait la force	unis nous tenons, divisés nous tombons	proverbe	travail
+if it ain't broke, don't fix it	ce qui marche ne se répare pas ; ne touchez pas à ce qui marche	si ce n'est pas cassé, ne le répare pas	proverbe	travail
+if you want something done right, do it yourself	on n'est jamais si bien servi que par soi-même	si tu veux que ce soit bien fait, fais-le toi-même	proverbe	travail
+don't put all your eggs in one basket	il ne faut pas mettre tous ses œufs dans le même panier	ne mets pas tous tes œufs dans le même panier	proverbe	nourriture
+don't bite the hand that feeds you	il ne faut pas cracher dans la soupe	ne mords pas la main qui te nourrit	proverbe	nourriture
+don't throw the baby out with the bathwater	il ne faut pas jeter le bébé avec l'eau du bain	ne jette pas le bébé avec l'eau du bain	proverbe	divers
+don't judge a man until you've walked a mile in his shoes	avant de juger, mets-toi à sa place	ne juge pas un homme avant d'avoir marché un mille dans ses chaussures	proverbe	emotions
+the road to hell is paved with good intentions	l'enfer est pavé de bonnes intentions	la route de l'enfer est pavée de bonnes intentions	proverbe	divers
+a fool and his money are soon parted	un sot et son argent sont vite séparés	un imbécile et son argent sont vite séparés	proverbe	argent
+money doesn't grow on trees	l'argent ne tombe pas du ciel ; l'argent ne pousse pas sur les arbres	l'argent ne pousse pas sur les arbres	proverbe	argent
+money can't buy happiness	l'argent ne fait pas le bonheur	l'argent ne peut pas acheter le bonheur	proverbe	argent
+a penny saved is a penny earned	un sou économisé est un sou gagné	un penny économisé est un penny gagné	proverbe	argent
+penny wise and pound foolish	économiser sur les petites choses et dépenser sur les grandes ; faire des économies de bouts de chandelle	sage pour un penny et sot pour une livre	proverbe	argent
+waste not, want not	qui ne gaspille pas ne manque pas	ne gaspille pas, ne manque pas	proverbe	argent
+the best things in life are free	les meilleures choses de la vie sont gratuites	les meilleures choses de la vie sont gratuites	proverbe	argent
+there's no such thing as a free lunch	rien n'est gratuit ; il n'y a pas de repas gratuit	il n'y a pas de déjeuner gratuit	proverbe	argent
+no pain, no gain	on n'a rien sans peine	pas de douleur, pas de gain	proverbe	travail
+nothing ventured, nothing gained	qui ne risque rien n'a rien	rien risqué, rien gagné	proverbe	travail
+fortune favours the bold	la fortune sourit aux audacieux	la fortune favorise les audacieux	proverbe	divers
+strike while the iron is hot	il faut battre le fer tant qu'il est chaud	frappe pendant que le fer est chaud	proverbe	temps
+make hay while the sun shines	il faut battre le fer tant qu'il est chaud ; profitons du beau temps	fais les foins pendant que le soleil brille	proverbe	meteo
+it never rains but it pours	un malheur n'arrive jamais seul	il ne pleut jamais sans que ça déverse	proverbe	meteo
+misery loves company	le malheur aime la compagnie ; quand on est malheureux, on aime ne pas être seul	la misère aime la compagnie	proverbe	emotions
+out of sight, out of mind	loin des yeux, loin du cœur	hors de vue, hors de l'esprit	proverbe	emotions
+the more, the merrier	plus on est de fous, plus on rit	plus il y en a, plus on s'amuse	proverbe	divers
+variety is the spice of life	il faut de tout pour faire un monde ; la variété est le sel de la vie	la variété est l'épice de la vie	proverbe	divers
+all's well that ends well	tout est bien qui finit bien	tout va bien qui finit bien	proverbe	divers
+when the going gets tough, the tough get going	dans l'adversité, les forts se révèlent	quand ça devient dur, les durs s'y mettent	proverbe	travail
+there's no smoke without fire	il n'y a pas de fumée sans feu	il n'y a pas de fumée sans feu	proverbe	divers
+a chain is only as strong as its weakest link	une chaîne est aussi solide que son maillon le plus faible	une chaîne n'est aussi forte que son maillon le plus faible	proverbe	travail
+the squeaky wheel gets the grease	c'est celui qui crie le plus fort qui est entendu	la roue qui grince reçoit la graisse	proverbe	communication
+silence is golden	le silence est d'or ; la parole est d'argent, le silence est d'or	le silence est d'or	proverbe	communication

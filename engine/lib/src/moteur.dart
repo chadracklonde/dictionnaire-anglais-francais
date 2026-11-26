@@ -31,6 +31,9 @@ class Moteur {
 
   final Source source;
 
+  /// Afficher aussi les expressions vulgaires (masquées par défaut).
+  bool afficherVulgaire = false;
+
   /// Nombre maximal de fiches ouvertes pour une même requête.
   static const int maxFiches = 8;
 
@@ -77,10 +80,28 @@ class Moteur {
         source.fauxAmi(mot.mot.toLowerCase()).then((v) => <FauxAmi>[if (v != null) v]),
         const [],
       ),
+      _tolerant<List<InfoExpression>>(
+        source.infoExpression(mot.id).then((v) => <InfoExpression>[if (v != null) v]),
+        const [],
+      ),
+      _tolerant<List<LigneExpression>>(
+        source.expressionsAvec(plier(mot.mot), vulgaire: afficherVulgaire, limite: 12),
+        const [],
+      ),
     ]);
+    final infoExpression = (r[9] as List<InfoExpression>).isEmpty ? null : (r[9] as List<InfoExpression>).first;
+    var equivalents = r[0] as List<Equivalent>;
+    // L'équivalent recommandé d'une expression passe en premier.
+    if (infoExpression != null && infoExpression.fr.isNotEmpty) {
+      final voulu = infoExpression.fr.toLowerCase();
+      equivalents = [
+        ...equivalents.where((e) => e.fr.toLowerCase() == voulu),
+        ...equivalents.where((e) => e.fr.toLowerCase() != voulu),
+      ];
+    }
     return Fiche(
       mot: mot,
-      equivalents: r[0] as List<Equivalent>,
+      equivalents: equivalents,
       sens: r[1] as List<Sens>,
       definitionsFr: r[2] as List<String>,
       formes: r[3] as List<Forme>,
@@ -91,7 +112,27 @@ class Moteur {
       relations: r[6] as List<Relation>,
       particules: r[7] as List<String>,
       fauxAmi: (r[8] as List<FauxAmi>).isEmpty ? null : (r[8] as List<FauxAmi>).first,
+      expression: infoExpression,
+      expressionsAvec: mot.mot.contains(' ') ? const [] : r[10] as List<LigneExpression>,
     );
+  }
+
+  /// Expressions pour l'écran « Expressions » (filtres : type, thème, texte).
+  Future<List<LigneExpression>> expressions(
+          {String type = '', String theme = '', String recherche = '', int limite = 60, int decalage = 0}) =>
+      source.expressions(
+          type: type, theme: theme, vulgaire: afficherVulgaire, recherche: recherche,
+          limite: limite, decalage: decalage);
+
+  /// « Expression du jour » : une expression soignée choisie d'après [jour] (nombre de jours écoulés).
+  Future<LigneExpression?> expressionDuJour(int jour) async {
+    try {
+      final n = await source.nombreExpressionsCurees();
+      if (n == 0) return null;
+      return await source.expressionCuree(jour.abs() % n);
+    } catch (_) {
+      return null;
+    }
   }
 
   static Future<T> _tolerant<T>(Future<T> avenir, T parDefaut) =>

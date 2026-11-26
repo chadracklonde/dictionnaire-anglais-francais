@@ -129,23 +129,96 @@ LIMIT ?
 
 /// Équivalents français tirés au hasard (mauvaises réponses du quiz). Paramètre : nombre voulu.
 const String requeteEquivalentsHasard = '''
-SELECT fr FROM traductions
-WHERE id >= (ABS(RANDOM()) % (SELECT MAX(id) FROM traductions)) + 1
-  AND source = 'en+fr' AND length(fr) <= 25 AND fr NOT LIKE '% %'
+SELECT t.fr FROM traductions t JOIN mots m ON m.id = t.mot_id
+WHERE t.id >= (ABS(RANDOM()) % (SELECT MAX(id) FROM traductions)) + 1
+  AND t.source = 'en+fr' AND length(t.fr) <= 25 AND t.fr NOT LIKE '% %'
+  AND t.fr NOT GLOB '[A-Z]*' AND m.rang IS NOT NULL AND m.rang <= 10000 AND m.nature != 'name'
 LIMIT ?
 ''';
 
 /// Mots anglais courants tirés au hasard (mauvaises réponses du quiz inverse). Paramètre : nombre voulu.
 const String requeteMotsHasard = '''
-SELECT mot FROM mots
-WHERE id >= (ABS(RANDOM()) % (SELECT MAX(id) FROM mots)) + 1
-  AND rang IS NOT NULL AND rang <= 20000 AND nature != 'name' AND mot NOT LIKE '% %'
+WITH d AS (SELECT (ABS(RANDOM()) % (SELECT MAX(id) FROM mots)) + 1 AS r)
+SELECT mot FROM (
+  SELECT mot, 0 AS tour, id FROM mots, d
+  WHERE id >= d.r AND rang IS NOT NULL AND rang <= 10000 AND nature != 'name'
+    AND mot NOT LIKE '% %' AND mot NOT GLOB '*[A-Z]*'
+    AND EXISTS (SELECT 1 FROM traductions t WHERE t.mot_id = mots.id AND t.source = 'en+fr')
+  UNION ALL
+  SELECT mot, 1 AS tour, id FROM mots, d
+  WHERE id < d.r AND rang IS NOT NULL AND rang <= 10000 AND nature != 'name'
+    AND mot NOT LIKE '% %' AND mot NOT GLOB '*[A-Z]*'
+    AND EXISTS (SELECT 1 FROM traductions t WHERE t.mot_id = mots.id AND t.source = 'en+fr')
+)
+ORDER BY tour, id
 LIMIT ?
 ''';
 
 /// Faux amis tirés au hasard (quiz). Paramètre : nombre voulu.
 const String requeteFauxAmisHasard = '''
 SELECT mot, piege, vrai FROM faux_amis ORDER BY RANDOM() LIMIT ?
+''';
+
+/// Ce qu'on sait d'une expression (type, niveau de langue, sens littéral…). Paramètre : id du mot.
+const String requeteInfoExpression = '''
+SELECT type, registre, litteral, fr, theme, exemple, curee FROM expressions WHERE mot_id = ?
+''';
+
+/// Liste d'expressions, les soignées d'abord. Paramètres : type (« » = tous) deux fois, thème (« » =
+/// tous) deux fois, 1 pour afficher aussi le vulgaire, motif de recherche brut (« » = aucun) puis
+/// « %motif% » deux fois (anglais, puis français), nombre de lignes, décalage.
+const String requeteExpressions = '''
+SELECT m.id, m.mot, m.nature, m.rang, e.type, e.registre, e.litteral, e.curee,
+       CASE WHEN e.fr != '' THEN e.fr ELSE COALESCE((SELECT t.fr FROM traductions t WHERE t.mot_id = m.id
+         ORDER BY CASE t.source WHEN 'en+fr' THEN 0 WHEN 'en' THEN 1 ELSE 2 END, t.id LIMIT 1), '') END AS fr
+FROM expressions e JOIN mots m ON m.id = e.mot_id
+WHERE (? = '' OR e.type = ?)
+  AND (? = '' OR e.theme = ?)
+  AND (? = 1 OR e.registre != 'vulgaire')
+  AND (? = '' OR m.mot_recherche LIKE ?
+       OR EXISTS (SELECT 1 FROM traductions t2 WHERE t2.mot_id = m.id AND t2.fr_recherche LIKE ?))
+ORDER BY e.curee DESC,
+         CASE e.type WHEN 'idiome' THEN 0 WHEN 'proverbe' THEN 1 WHEN 'utile' THEN 2 WHEN 'particule' THEN 3 ELSE 4 END,
+         m.rang IS NULL, m.rang, m.mot_recherche
+LIMIT ? OFFSET ?
+''';
+
+/// Expressions qui contiennent un mot (hors verbes à particule, déjà listés à part). Paramètres : mot
+/// plié, le même mot (pour ne pas se renvoyer lui-même), 1 pour afficher aussi le vulgaire, limite.
+const String requeteExpressionsAvec = '''
+SELECT m.id, m.mot, m.nature, m.rang, e.type, e.registre, e.litteral, e.curee,
+       CASE WHEN e.fr != '' THEN e.fr ELSE COALESCE((SELECT t.fr FROM traductions t WHERE t.mot_id = m.id
+         ORDER BY CASE t.source WHEN 'en+fr' THEN 0 WHEN 'en' THEN 1 ELSE 2 END, t.id LIMIT 1), '') END AS fr
+FROM expression_mots w
+JOIN expressions e ON e.mot_id = w.expr_id
+JOIN mots m ON m.id = e.mot_id
+WHERE w.mot = ? AND m.mot_recherche != ? AND e.type != 'particule' AND (? = 1 OR e.registre != 'vulgaire')
+ORDER BY e.curee DESC, m.rang IS NULL, m.rang, length(m.mot)
+LIMIT ?
+''';
+
+/// Nombre d'expressions soignées qui conviennent à « l'expression du jour » (idiomes et proverbes).
+const String requeteNombreExpressionsCurees = '''
+SELECT COUNT(*) AS n FROM expressions
+WHERE curee = 1 AND type IN ('idiome', 'proverbe') AND registre != 'vulgaire' AND fr != ''
+''';
+
+/// Une expression soignée, par numéro d'ordre. Paramètre : décalage.
+const String requeteExpressionCuree = '''
+SELECT m.id, m.mot, m.nature, m.rang, e.type, e.registre, e.litteral, e.curee, e.fr AS fr
+FROM expressions e JOIN mots m ON m.id = e.mot_id
+WHERE e.curee = 1 AND e.type IN ('idiome', 'proverbe') AND e.registre != 'vulgaire' AND e.fr != ''
+ORDER BY e.mot_id
+LIMIT 1 OFFSET ?
+''';
+
+/// Expressions soignées tirées au hasard (quiz). Paramètre : nombre voulu.
+const String requeteExpressionsCureesHasard = '''
+SELECT m.id, m.mot, m.nature, m.rang, e.type, e.registre, e.litteral, e.curee, e.fr AS fr
+FROM expressions e JOIN mots m ON m.id = e.mot_id
+WHERE e.curee = 1 AND e.type IN ('idiome', 'proverbe') AND e.registre != 'vulgaire' AND e.fr != ''
+ORDER BY RANDOM()
+LIMIT ?
 ''';
 
 /// Français → anglais. Paramètres : texte plié, nombre maximal de lignes.

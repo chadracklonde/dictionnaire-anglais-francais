@@ -136,6 +136,8 @@ jobs:
           ls -l /tmp/audio
           cp /tmp/audio/audio_index.json app/assets/audio/audio_index.json
           python3 -I tools/android_audio.py --android app/android --zips /tmp/audio
+      - name: Rappel quotidien (notification locale)
+        run: python3 -I tools/android_rappel.py --android app/android
       - name: Analyse
         working-directory: app
         run: |
@@ -278,6 +280,27 @@ jobs:
           profile: pixel_6
           disable-animations: true
           script: python3 tools/captures_android.py apk/flutter-apk/app-release.apk captures
+      # Grands écrans : tablette puis appareil pliable (scénario réduit). Un échec n'arrête pas le reste.
+      - name: Émulateur tablette
+        continue-on-error: true
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_tablet
+          disable-animations: true
+          script: python3 tools/captures_android.py apk/flutter-apk/app-release.apk captures/tablette court
+      - name: Émulateur appareil pliable
+        continue-on-error: true
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_fold
+          disable-animations: true
+          script: python3 tools/captures_android.py apk/flutter-apk/app-release.apk captures/pliable court
       - name: Garder les captures
         if: always()
         uses: actions/upload-artifact@v4

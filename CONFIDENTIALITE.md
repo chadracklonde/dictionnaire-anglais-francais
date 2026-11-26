@@ -13,6 +13,7 @@ L'application ne collecte, ne transmet et ne partage **aucune donnée personnell
 - Elle n'a **aucune permission Internet** et n'envoie rien sur un serveur.
 - Elle ne demande **aucun compte**, aucun e-mail, aucun numéro de téléphone.
 - Elle ne contient **aucune publicité** et aucun outil de statistiques ou de suivi.
+- Elle peut, **si vous l'activez** dans les réglages, afficher une **notification quotidienne** pour vous rappeler de réviser. Ce rappel est programmé et affiché **sur votre téléphone** uniquement (permission « notifications » d'Android) : rien n'est envoyé, et vous pouvez le désactiver à tout moment.
 - Elle n'utilise ni votre position, ni vos contacts, ni votre micro, ni votre appareil photo.
 
 ## Ce qui reste sur votre appareil

@@ -2,7 +2,7 @@
 
 > Lu automatiquement par Claude Code à l'ouverture du dépôt. **Aucun mot de passe ici** : les secrets
 > sont décrits (où ils sont, comment ils s'appellent), jamais écrits.
-> Dernière mise à jour : 25 novembre 2026 · état : phases 0 à 4 faites, lots 1 à 6 et 8 compilés par la CI (§15), lot 7 (audio) en cours (§16), rien de publié. Travail sur la branche `claude/hopeful-shannon-ohokkd` (PR en brouillon).
+> Dernière mise à jour : 26 novembre 2026 · état : phases 0 à 4 faites, lots 1 à 9 et audio fusionnés dans `main` (PR n° 1) ; lots 10 à 13 (expressions, apprentissage, écoute, rappel quotidien ; §19 à §22) compilés par la CI sur la branche `claude/hopeful-shannon-ohokkd` (PR n° 2) ; fiche Play Store en cours de remplissage par Chadrack ; AAB code 12 à essayer sur téléphone.
 
 ## 1. En bref
 
@@ -294,3 +294,55 @@ Le premier téléchargement complet a duré 5 h puis perdu ses fichiers : `zip` 
 `audio-brut` conservé même en cas d'échec, mots de rang > 30 000 écartés (`--rang-max`), budget de 320 min.
 Constat du premier essai : 25 709 mots candidats, 3 734 fichiers pour le cœur (70 Mo), débit ≈ 0,8 fichier/s.
 Relancé le 25 novembre 2026 (22 h 45 UTC) ; à son terme : `build.yml` avec `audio = oui`.
+
+## 19. Lot 10 — Expressions (26 novembre 2026, version 0.9.0+11)
+
+Demande de Chadrack : expressions anglaises avec leur traduction française, **bien plus de 300**, enrichies depuis le Wiktionnaire.
+- **Données** : tables `expressions` (type, registre, sens littéral, équivalent recommandé, thème, exemple, `curee`) et `expression_mots`
+  (index inversé pour « Expressions avec … »). Listes écrites à la main dans `tools/data/expressions_*.tsv`
+  (idiomes, phrases utiles par situation, proverbes, verbes à particule ; plus de 500 lignes ; format en tête de chaque fichier ;
+  `test_expressions.py` vérifie les vrais fichiers). Classement automatique du reste du Wiktionnaire dans `construire_base.py`
+  (`classer_expressions`) d'après la nature (phrase, proverbe…) et les catégories du Wiktionnaire anglais téléchargées par la CI
+  (`tools/categories_wiktionnaire.py`, étape non fatale de `data.yml`). Le vulgaire est classé `vulgaire`.
+- **Moteur** : `InfoExpression`, `LigneExpression`, méthodes `Source` (`infoExpression`, `expressions`, `expressionsAvec`,
+  `expressionCuree`…), `Moteur.afficherVulgaire` (faux par défaut), `Moteur.expressions`, `Moteur.expressionDuJour`.
+- **Application** : écran Expressions (recherche EN/FR, filtres type et thème), puce sur l'accueil, « Expression du jour »,
+  bloc d'expression et « Expressions avec … » sur la fiche, quiz des expressions, réglage « Afficher les expressions vulgaires ».
+- **Corrections** : mauvaises réponses de quiz limitées aux mots courants sans majuscule, exemples courts d'abord, formes sans doublon
+  ni formes vieillies sur la fiche.
+- À faire : relancer `data.yml` (publier = oui) puis `build.yml` (audio = oui) ; vérifier dans les annotations le nombre d'expressions
+  (rapport de la base) ; refaire les captures du Play Store.
+
+## 20. Lot 11 — apprendre avec les expressions et la voix (26 novembre 2026)
+
+- Étoile (favori, donc révision) et bouton « Écouter » sur chaque expression d'une liste (`CarteExpression`).
+- Réviser : « Apprendre 10 expressions » (crée la liste « Expressions » et y ajoute dix expressions soignées), « Phrases à trous »
+  (`ModeQuiz.trous` : exemples de la base dont un mot est retiré), « Dictée de mots » et « Dictée d'expressions » (`dictee_screen.dart`,
+  voix du téléphone, comparaison sans accents ni ponctuation).
+- Reste du plan : lot 12 (lecture audio d'une liste, notes sur les expressions : faits, §21) puis lot 13 (rappel quotidien, §22).
+
+## 21. Lot 12 (partiel) — écoute (26 novembre 2026)
+
+- `ecoute_screen.dart` : « Écouter cette liste » (onglet Réviser) lit en boucle le mot en anglais puis son équivalent français
+  (`Speech.dire`, voix du téléphone en-US/en-GB et fr-FR), écran éteint possible.
+- Notes sur les expressions : déjà possibles (la fiche d'une expression porte « Ajouter une note »).
+- Le rappel quotidien a été fait dans un lot à part (§22), sans greffon.
+
+## 22. Lot 13 — rappel quotidien (26 novembre 2026, version 0.10.0+12)
+
+- Sans greffon Flutter (pour ne pas dépendre de la version de Gradle ni d'un compileSdk) : `tools/android/RappelPlugin.kt`
+  (alarme répétée inexacte une fois par jour, notification locale, récepteur de redémarrage) branché par `tools/android_rappel.py`
+  (permissions `POST_NOTIFICATIONS` et `RECEIVE_BOOT_COMPLETED`, récepteurs dans le manifeste, icône `ic_rappel`, MainActivity réécrite
+  avec ou sans les packs audio). Étape `Rappel quotidien` de `build.yml`, toujours exécutée ; testé par `test_android_rappel.py`.
+- Dart : `data/rappel.dart` (canal `dicoenfr/rappel`), réglage « Rappel quotidien » et choix de l'heure dans les réglages,
+  `UserStore.rappelActif/rappelMinutes`, alarme remise à chaque lancement. Désactivé par défaut. Android seulement.
+- `CONFIDENTIALITE.md` et `PLAYSTORE.md` mis à jour ; formulaire « sécurité des données » inchangé (rien n'est envoyé).
+- À vérifier sur téléphone : la permission est demandée à l'activation, la notification arrive vers l'heure choisie, un appui ouvre
+  l'application, le rappel survit à un redémarrage.
+
+## 23. Captures du Play Store (26 novembre 2026)
+
+`tools/captures_android.py` (option `captures = oui` de `build.yml`, à lancer avec `audio = oui` pour ne pas écraser l'AAB de la release) :
+scénario téléphone complet (accueil, faux ami, fiche, carte de révision, quiz, expressions, phrases utiles, fiche d'idiome, « Expressions avec »,
+phrases à trous, réglages avec le rappel, thème sombre) puis scénario réduit `court` pour la tablette (`pixel_tablet`) et l'appareil pliable
+(`pixel_fold`), étapes non bloquantes. Résultat : release `captures` (`captures-brutes.zip`).

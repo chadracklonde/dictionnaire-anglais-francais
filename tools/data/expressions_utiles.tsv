@@ -1,0 +1,185 @@
+# Phrases utiles de tous les jours, classées par situation (type « utile »).
+# Colonnes : expression <TAB> équivalent français <TAB> (sens littéral, vide ici) <TAB> utile <TAB> thème <TAB> registre <TAB> exemple
+# Thèmes : politesse, rencontre, voyage, hotel, restaurant, achats, sante, urgence, telephone, travail
+excuse me	excusez-moi ; pardon		utile	politesse
+I'm sorry	je suis désolé(e) ; pardon		utile	politesse
+thank you very much	merci beaucoup		utile	politesse
+you're welcome	de rien ; je vous en prie		utile	politesse
+please	s'il vous plaît ; s'il te plaît		utile	politesse
+no problem	pas de souci ; pas de problème		utile	politesse
+don't mention it	il n'y a pas de quoi		utile	politesse
+bless you	à vos souhaits ; à tes souhaits		utile	politesse
+good morning	bonjour (le matin)		utile	politesse
+good afternoon	bonjour (l'après-midi)		utile	politesse
+good evening	bonsoir		utile	politesse
+good night	bonne nuit		utile	politesse
+see you later	à tout à l'heure ; à plus tard		utile	politesse
+see you tomorrow	à demain		utile	politesse
+have a nice day	bonne journée		utile	politesse
+take care	prends soin de toi ; prenez soin de vous		utile	politesse
+congratulations	félicitations		utile	politesse
+good luck	bonne chance		utile	politesse
+cheers	santé ! ; merci (familier)		utile	politesse
+after you	après vous		utile	politesse
+could you help me	pourriez-vous m'aider ?		utile	politesse
+would you mind	cela vous dérangerait-il de		utile	politesse
+that's very kind of you	c'est très gentil de votre part		utile	politesse
+how are you	comment allez-vous ? ; comment vas-tu ?		utile	rencontre
+I'm fine, thank you	je vais bien, merci		utile	rencontre
+nice to meet you	enchanté(e) ; ravi(e) de faire votre connaissance		utile	rencontre
+what's your name	comment vous appelez-vous ? ; comment tu t'appelles ?		utile	rencontre
+my name is	je m'appelle		utile	rencontre
+where are you from	d'où venez-vous ? ; tu viens d'où ?		utile	rencontre
+I'm from	je viens de ; je suis de		utile	rencontre
+what do you do	que faites-vous dans la vie ?		utile	rencontre
+how old are you	quel âge avez-vous ? ; tu as quel âge ?		utile	rencontre
+do you speak English	parlez-vous anglais ?		utile	rencontre
+I don't speak English very well	je ne parle pas très bien anglais		utile	rencontre
+I speak a little English	je parle un peu anglais		utile	rencontre
+I don't understand	je ne comprends pas		utile	rencontre
+could you repeat that	pouvez-vous répéter ?		utile	rencontre
+could you speak more slowly	pouvez-vous parler plus lentement ?		utile	rencontre
+what does it mean	qu'est-ce que cela veut dire ?		utile	rencontre
+how do you say it in English	comment dit-on cela en anglais ?		utile	rencontre
+how do you spell it	comment ça s'écrit ?		utile	rencontre
+let's keep in touch	restons en contact		utile	rencontre
+it's a pleasure	c'est un plaisir		utile	rencontre
+make yourself at home	faites comme chez vous		utile	rencontre
+where is the station	où est la gare ?		utile	voyage
+where is the bathroom	où sont les toilettes ?		utile	voyage
+how do I get to	comment est-ce que je vais à		utile	voyage
+how far is it	c'est à quelle distance ?		utile	voyage
+is it far from here	est-ce loin d'ici ?		utile	voyage
+turn left	tournez à gauche		utile	voyage
+turn right	tournez à droite		utile	voyage
+go straight ahead	allez tout droit		utile	voyage
+on the corner	au coin de la rue		utile	voyage
+one ticket to	un billet pour		utile	voyage
+a return ticket	un aller-retour		utile	voyage
+a one-way ticket	un aller simple		utile	voyage
+what time does the train leave	à quelle heure part le train ?		utile	voyage
+what time does the bus arrive	à quelle heure arrive le bus ?		utile	voyage
+which platform	quel quai ?		utile	voyage
+is this seat taken	cette place est-elle libre ?		utile	voyage
+where is the nearest bus stop	où est l'arrêt de bus le plus proche ?		utile	voyage
+I missed my flight	j'ai raté mon vol		utile	voyage
+my flight is delayed	mon vol est retardé		utile	voyage
+where is the baggage claim	où est la récupération des bagages ?		utile	voyage
+I've lost my luggage	j'ai perdu mes bagages		utile	voyage
+nothing to declare	rien à déclarer		utile	voyage
+what is the purpose of your visit	quel est le motif de votre visite ?		utile	voyage
+I'm here on holiday	je suis ici en vacances		utile	voyage
+I'm here on business	je suis ici pour affaires		utile	voyage
+how long are you staying	combien de temps restez-vous ?		utile	voyage
+could you call me a taxi	pouvez-vous m'appeler un taxi ?		utile	voyage
+please take me to this address	conduisez-moi à cette adresse, s'il vous plaît		utile	voyage
+keep the change	gardez la monnaie		utile	voyage
+I have a reservation	j'ai une réservation		utile	hotel
+I'd like to book a room	je voudrais réserver une chambre		utile	hotel
+a single room	une chambre simple		utile	hotel
+a double room	une chambre double		utile	hotel
+how much is the room per night	combien coûte la chambre par nuit ?		utile	hotel
+is breakfast included	le petit déjeuner est-il compris ?		utile	hotel
+what time is check-out	à quelle heure faut-il libérer la chambre ?		utile	hotel
+could I have the key	pourrais-je avoir la clé ?		utile	hotel
+the air conditioning doesn't work	la climatisation ne marche pas		utile	hotel
+is there Wi-Fi	y a-t-il du Wi-Fi ?		utile	hotel
+what's the Wi-Fi password	quel est le mot de passe du Wi-Fi ?		utile	hotel
+could we have extra towels	pourrions-nous avoir des serviettes en plus ?		utile	hotel
+a table for two, please	une table pour deux, s'il vous plaît		utile	restaurant
+could we see the menu	pouvons-nous voir la carte ?		utile	restaurant
+what do you recommend	que me conseillez-vous ?		utile	restaurant
+I'll have the	je prendrai le		utile	restaurant
+I'd like to order	je voudrais commander		utile	restaurant
+I'm allergic to	je suis allergique à		utile	restaurant
+I'm vegetarian	je suis végétarien(ne)		utile	restaurant
+without meat	sans viande		utile	restaurant
+does it contain nuts	est-ce que cela contient des noix ?		utile	restaurant
+medium rare	à point (saignant)		utile	restaurant
+well done	bien cuit		utile	restaurant
+could I have some water	pourrais-je avoir de l'eau ?		utile	restaurant
+still or sparkling	plate ou gazeuse ?		utile	restaurant
+the bill, please	l'addition, s'il vous plaît		utile	restaurant
+could we split the bill	pouvons-nous partager l'addition ?		utile	restaurant
+is service included	le service est-il compris ?		utile	restaurant
+enjoy your meal	bon appétit		utile	restaurant
+it was delicious	c'était délicieux		utile	restaurant
+to go	à emporter		utile	restaurant
+how much is it	combien ça coûte ?		utile	achats
+how much does this cost	combien coûte ceci ?		utile	achats
+it's too expensive	c'est trop cher		utile	achats
+do you have a cheaper one	en avez-vous un moins cher ?		utile	achats
+I'm just looking	je regarde seulement		utile	achats
+can I try it on	puis-je l'essayer ?		utile	achats
+do you have this in a larger size	l'avez-vous en plus grand ?		utile	achats
+do you have this in another colour	l'avez-vous dans une autre couleur ?		utile	achats
+I'll take it	je le prends		utile	achats
+can I pay by card	puis-je payer par carte ?		utile	achats
+do you accept cash	acceptez-vous les espèces ?		utile	achats
+could I have a receipt	pourrais-je avoir un reçu ?		utile	achats
+could I have a bag	pourrais-je avoir un sac ?		utile	achats
+can I return this	puis-je rendre ceci ?		utile	achats
+what time do you open	à quelle heure ouvrez-vous ?		utile	achats
+what time do you close	à quelle heure fermez-vous ?		utile	achats
+is there a discount	y a-t-il une réduction ?		utile	achats
+it's on sale	c'est en solde		utile	achats
+I don't feel well	je ne me sens pas bien		utile	sante
+I need a doctor	j'ai besoin d'un médecin		utile	sante
+where is the nearest pharmacy	où est la pharmacie la plus proche ?		utile	sante
+I have a headache	j'ai mal à la tête		utile	sante
+I have a stomachache	j'ai mal au ventre		utile	sante
+I have a sore throat	j'ai mal à la gorge		utile	sante
+I have a fever	j'ai de la fièvre		utile	sante
+I've got a cold	je suis enrhumé(e)		utile	sante
+I feel dizzy	j'ai la tête qui tourne		utile	sante
+it hurts here	j'ai mal ici		utile	sante
+I'm allergic to penicillin	je suis allergique à la pénicilline		utile	sante
+I take this medication	je prends ce médicament		utile	sante
+how often should I take it	à quelle fréquence dois-je le prendre ?		utile	sante
+I need a prescription	j'ai besoin d'une ordonnance		utile	sante
+I need an ambulance	j'ai besoin d'une ambulance		utile	urgence
+call the police	appelez la police		utile	urgence
+help	au secours ! ; à l'aide !		utile	urgence
+it's an emergency	c'est une urgence		utile	urgence
+there's been an accident	il y a eu un accident		utile	urgence
+I've been robbed	on m'a volé		utile	urgence
+my passport has been stolen	on m'a volé mon passeport		utile	urgence
+I'm lost	je suis perdu(e)		utile	urgence
+fire	au feu !		utile	urgence
+be careful	faites attention ; fais attention		utile	urgence
+call a doctor	appelez un médecin		utile	urgence
+hello, this is	allô, ici ; bonjour, c'est		utile	telephone
+could I speak to	puis-je parler à		utile	telephone
+who's calling	qui est à l'appareil ?		utile	telephone
+speaking	c'est moi ; à l'appareil		utile	telephone
+hold on, please	ne quittez pas ; un instant, s'il vous plaît		utile	telephone
+I'll put you through	je vous passe la personne		utile	telephone
+could you take a message	pouvez-vous prendre un message ?		utile	telephone
+please call me back	rappelez-moi, s'il vous plaît		utile	telephone
+I can't hear you	je ne vous entends pas		utile	telephone
+the line is bad	la ligne est mauvaise		utile	telephone
+I'll call you back	je vous rappelle		utile	telephone
+wrong number	vous vous êtes trompé de numéro		utile	telephone
+I'll text you	je t'envoie un message		utile	telephone
+my phone is out of battery	mon téléphone n'a plus de batterie		utile	telephone
+nice to meet you, I'm	enchanté, je suis		utile	travail
+I'd like to make an appointment	je voudrais prendre rendez-vous		utile	travail
+what time is the meeting	à quelle heure est la réunion ?		utile	travail
+I'll send you an email	je vous enverrai un e-mail		utile	travail
+please find attached	veuillez trouver ci-joint		utile	travail
+I look forward to hearing from you	dans l'attente de votre réponse		utile	travail
+best regards	cordialement		utile	travail
+kind regards	bien cordialement		utile	travail
+dear sir or madam	madame, monsieur		utile	travail
+let me check	laissez-moi vérifier		utile	travail
+I'll get back to you	je reviens vers vous		utile	travail
+could you send me the report	pouvez-vous m'envoyer le rapport ?		utile	travail
+I'm afraid I can't	je crains de ne pas pouvoir		utile	travail
+that works for me	cela me convient		utile	travail
+I agree	je suis d'accord		utile	travail
+I don't agree	je ne suis pas d'accord		utile	travail
+what do you think	qu'en pensez-vous ?		utile	travail
+in my opinion	à mon avis		utile	travail
+it depends	ça dépend		utile	travail
+as soon as possible	dès que possible		utile	travail
+by the way	au fait ; d'ailleurs		utile	travail

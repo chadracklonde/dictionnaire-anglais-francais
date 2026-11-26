@@ -51,6 +51,26 @@ abstract class Source {
   /// Faux ami, d'après le mot anglais en minuscules.
   Future<FauxAmi?> fauxAmi(String mot);
 
+  /// Infos d'expression d'un mot, ou null si ce n'est pas une expression.
+  Future<InfoExpression?> infoExpression(int motId);
+
+  /// Expressions, les soignées d'abord. [type] et [theme] vides = tous ; [recherche] : texte brut.
+  Future<List<LigneExpression>> expressions(
+      {String type = '', String theme = '', bool vulgaire = false, String recherche = '',
+      required int limite, int decalage = 0});
+
+  /// Expressions qui contiennent le mot [motPlie].
+  Future<List<LigneExpression>> expressionsAvec(String motPlie, {bool vulgaire = false, required int limite});
+
+  /// Nombre d'expressions soignées (idiomes et proverbes) : base de « l'expression du jour ».
+  Future<int> nombreExpressionsCurees();
+
+  /// Expression soignée numéro [decalage] (0 = première).
+  Future<LigneExpression?> expressionCuree(int decalage);
+
+  /// Expressions soignées tirées au hasard (quiz).
+  Future<List<LigneExpression>> expressionsCureesHasard(int nombre);
+
   /// Mots anglais dont un équivalent français correspond à [recherche] (texte plié).
   Future<List<LigneInverse>> anglaisParFrancais(String recherche, int limite);
 

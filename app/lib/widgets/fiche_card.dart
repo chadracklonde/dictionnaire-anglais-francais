@@ -10,6 +10,7 @@ import '../data/libelles.dart';
 import '../data/speech.dart';
 import '../data/user_store.dart';
 import '../screens/conjugation_screen.dart';
+import '../screens/expressions_screen.dart';
 import '../screens/result_screen.dart';
 import 'listes.dart';
 
@@ -108,10 +109,22 @@ class _FicheCardState extends State<FicheCard> {
     final uk = _api('uk');
 
     final equivalents = fiche.equivalents;
-    final exemples = [
+    // Les exemples courts d'abord : un exemple de trois lignes écrase la fiche.
+    final exemples = ([
       for (final x in fiche.sens)
-        if (x.exemple.isNotEmpty) x.exemple
-    ].take(2).toList();
+        if (x.exemple.isNotEmpty && x.exemple.length <= 140) x.exemple
+    ]..sort((a, b) => a.length.compareTo(b.length)))
+        .take(2)
+        .toList();
+    // Formes : sans doublon, sans les formes vieillies ou régionales.
+    final vuesFormes = <String>{};
+    final formes = [
+      for (final f in fiche.formes)
+        if (!RegExp(r'archaic|obsolete|dialect|rare|nonstandard|informal|misspelling')
+                .hasMatch(f.etiquettes) &&
+            vuesFormes.add(f.forme.toLowerCase()))
+          f
+    ];
     final visibles = _tousLesEquivalents || equivalents.length <= _equivalentsVisibles
         ? equivalents
         : equivalents.take(_equivalentsVisibles).toList();
@@ -204,6 +217,7 @@ class _FicheCardState extends State<FicheCard> {
                   ),
                 ),
               ),
+            if (fiche.expression != null) _BlocExpression(info: fiche.expression!),
             if (us.isNotEmpty || uk.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: 4),
@@ -290,12 +304,12 @@ class _FicheCardState extends State<FicheCard> {
               if (_definitions)
                 for (final s in fiche.sens) _LigneSens(sens: s),
             ],
-            if (fiche.formes.isNotEmpty) ...[
+            if (formes.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text('Formes', style: theme.textTheme.titleSmall),
               const SizedBox(height: 2),
               Text(
-                fiche.formes.take(12).map((f) {
+                formes.take(12).map((f) {
                   final b = baliseFr(f.etiquettes);
                   return b.isEmpty ? f.forme : '${f.forme} ($b)';
                 }).join(' · '),
@@ -306,6 +320,12 @@ class _FicheCardState extends State<FicheCard> {
             _MotsLies(titre: 'Contraires', mots: fiche.contraires),
             _MotsLies(titre: 'Verbes à particule', mots: fiche.particules),
             _MotsLies(titre: 'Même famille', mots: fiche.famille),
+            if (fiche.expressionsAvec.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text('Expressions avec « ${fiche.mot.mot} »', style: theme.textTheme.titleSmall),
+              const SizedBox(height: 4),
+              for (final e in fiche.expressionsAvec.take(6)) CarteExpression(ligne: e),
+            ],
             if (fiche.mot.nature == 'verb') ...[
               const SizedBox(height: 8),
               Align(
@@ -359,6 +379,58 @@ class _FicheCardState extends State<FicheCard> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Ce qu'on sait d'une expression : type, niveau de langue, sens littéral, équivalent recommandé, exemple.
+class _BlocExpression extends StatelessWidget {
+  const _BlocExpression({required this.info});
+
+  final InfoExpression info;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final registre = registreFr(info.registre);
+    final theme2 = themesExpression[info.theme];
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            [
+              typeExpressionUnFr(info.type)[0].toUpperCase() + typeExpressionUnFr(info.type).substring(1),
+              if (registre.isNotEmpty) registre,
+              if (theme2 != null) theme2.toLowerCase(),
+            ].join(' · '),
+            style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.onSurface),
+          ),
+          if (info.fr.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text('Équivalent recommandé : ${info.fr}',
+                style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurface)),
+          ],
+          if (info.litteral.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text('Mot à mot : ${info.litteral}',
+                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface)),
+          ],
+          if (info.exemple.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text('Exemple : ${info.exemple}',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface, fontStyle: FontStyle.italic)),
+          ],
+        ],
       ),
     );
   }
