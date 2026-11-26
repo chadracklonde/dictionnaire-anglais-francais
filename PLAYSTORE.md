@@ -55,3 +55,9 @@ Livres et références (ou Éducation)
 - Icône : 512 × 512 (générée par `python3 tools/make_icon.py`, à exporter à cette taille).
 - Image de présentation : 1024 × 500.
 - Captures d'écran téléphone : au moins 2 (accueil, fiche, conjugaison, index, thème sombre).
+
+## Notifications (version 0.10.0)
+
+L'application déclare la permission « notifications » (Android 13 et plus) et « recevoir le démarrage » pour remettre le rappel
+quotidien après un redémarrage. Le rappel est facultatif, désactivé par défaut et entièrement local : la section « Sécurité des
+données » reste inchangée (aucune donnée collectée ni partagée).

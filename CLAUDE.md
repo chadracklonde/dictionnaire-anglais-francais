@@ -330,3 +330,15 @@ Demande de Chadrack : expressions anglaises avec leur traduction française, **b
 - **Rappel quotidien (notification) non fait** : il demande `flutter_local_notifications`, le désucrage Java dans `app/build.gradle`,
   la permission `POST_NOTIFICATIONS`, des récepteurs dans le manifeste et la fiche Play Store à revoir ; trop risqué sans compilation locale.
   À faire dans un lot à part, avec un patch Gradle comme `tools/android_audio.py`, après l'essai du lot 11 sur téléphone.
+
+## 22. Lot 13 — rappel quotidien (26 novembre 2026, version 0.10.0+12)
+
+- Sans greffon Flutter (pour ne pas dépendre de la version de Gradle ni d'un compileSdk) : `tools/android/RappelPlugin.kt`
+  (alarme répétée inexacte une fois par jour, notification locale, récepteur de redémarrage) branché par `tools/android_rappel.py`
+  (permissions `POST_NOTIFICATIONS` et `RECEIVE_BOOT_COMPLETED`, récepteurs dans le manifeste, icône `ic_rappel`, MainActivity réécrite
+  avec ou sans les packs audio). Étape `Rappel quotidien` de `build.yml`, toujours exécutée ; testé par `test_android_rappel.py`.
+- Dart : `data/rappel.dart` (canal `dicoenfr/rappel`), réglage « Rappel quotidien » et choix de l'heure dans les réglages,
+  `UserStore.rappelActif/rappelMinutes`, alarme remise à chaque lancement. Désactivé par défaut. Android seulement.
+- `CONFIDENTIALITE.md` et `PLAYSTORE.md` mis à jour ; formulaire « sécurité des données » inchangé (rien n'est envoyé).
+- À vérifier sur téléphone : la permission est demandée à l'activation, la notification arrive vers l'heure choisie, un appui ouvre
+  l'application, le rappel survit à un redémarrage.

@@ -136,6 +136,8 @@ jobs:
           ls -l /tmp/audio
           cp /tmp/audio/audio_index.json app/assets/audio/audio_index.json
           python3 -I tools/android_audio.py --android app/android --zips /tmp/audio
+      - name: Rappel quotidien (notification locale)
+        run: python3 -I tools/android_rappel.py --android app/android
       - name: Analyse
         working-directory: app
         run: |

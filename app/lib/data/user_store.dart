@@ -347,6 +347,16 @@ class UserStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Rappel quotidien de révision (notification locale) : activé ou non, et heure en minutes depuis minuit.
+  bool get rappelActif => _prefs.getBool('rappelActif') ?? false;
+  int get rappelMinutes => _prefs.getInt('rappelMinutes') ?? 18 * 60;
+
+  Future<void> setRappel({required bool actif, int? minutes}) async {
+    await _prefs.setBool('rappelActif', actif);
+    if (minutes != null) await _prefs.setInt('rappelMinutes', minutes);
+    notifyListeners();
+  }
+
   /// Afficher aussi les expressions vulgaires (masquées par défaut).
   bool get afficherVulgaire => _prefs.getBool('afficherVulgaire') ?? false;
 

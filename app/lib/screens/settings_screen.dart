@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../app.dart';
+import '../data/rappel.dart';
 import '../widgets/mise_en_page.dart';
 import '../widgets/packs_audio.dart';
 import 'about_screen.dart';
@@ -99,6 +100,28 @@ class SettingsScreen extends StatelessWidget {
             value: user.afficherVulgaire,
             onChanged: user.setAfficherVulgaire,
           ),
+          if (Rappel.disponible) ...[
+            const SizedBox(height: 24),
+            Text('Rappel', style: theme.textTheme.titleMedium),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Rappel quotidien de révision'),
+              subtitle: Text(user.rappelActif
+                  ? 'Chaque jour vers ${_heure(user.rappelMinutes)}. La notification reste sur ce téléphone.'
+                  : 'Une notification par jour pour penser à réviser. Rien n\'est envoyé.'),
+              value: user.rappelActif,
+              onChanged: (actif) => _basculerRappel(context, actif),
+            ),
+            if (user.rappelActif)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.schedule_rounded),
+                  label: Text('Changer l\'heure (${_heure(user.rappelMinutes)})'),
+                  onPressed: () => _choisirHeure(context),
+                ),
+              ),
+          ],
           const SectionPacksAudio(),
           const SizedBox(height: 24),
           Text('Sauvegarde', style: theme.textTheme.titleMedium),
@@ -174,5 +197,44 @@ class SettingsScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  static String _heure(int minutes) =>
+      '${(minutes ~/ 60).toString().padLeft(2, '0')} h ${(minutes % 60).toString().padLeft(2, '0')}';
+
+  Future<void> _basculerRappel(BuildContext context, bool actif) async {
+    final user = AppScope.of(context).user;
+    final messenger = ScaffoldMessenger.of(context);
+    if (!actif) {
+      await Rappel.annuler();
+      await user.setRappel(actif: false);
+      return;
+    }
+    final permis = await Rappel.demanderPermission();
+    if (!permis) {
+      messenger.showSnackBar(const SnackBar(
+        content: Text('Les notifications sont refusées : autorisez-les dans les réglages du téléphone '
+            'pour activer le rappel.'),
+      ));
+      return;
+    }
+    final ok = await Rappel.planifier(user.rappelMinutes);
+    await user.setRappel(actif: ok);
+    if (!ok) {
+      messenger.showSnackBar(const SnackBar(content: Text('Impossible de programmer le rappel.')));
+    }
+  }
+
+  Future<void> _choisirHeure(BuildContext context) async {
+    final user = AppScope.of(context).user;
+    final choisie = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: user.rappelMinutes ~/ 60, minute: user.rappelMinutes % 60),
+      helpText: 'Heure du rappel',
+    );
+    if (choisie == null) return;
+    final minutes = choisie.hour * 60 + choisie.minute;
+    await Rappel.planifier(minutes);
+    await user.setRappel(actif: true, minutes: minutes);
   }
 }
