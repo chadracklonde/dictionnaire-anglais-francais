@@ -145,6 +145,14 @@ jobs:
         run: |
           flutter build appbundle --release > aab.txt 2>&1 || { echo "::error::AAB $(grep -iE 'error|wrong|exception|keystore|signing' -A1 aab.txt | head -14 | tr '\n' '|' | cut -c1-1500)"; exit 1; }
           ls -l build/app/outputs/bundle/release/app-release.aab
+      - name: Contenu de l'AAB (packs audio)
+        if: inputs.audio == 'oui'
+        run: |
+          aab=app/build/app/outputs/bundle/release/app-release.aab
+          resume=$(unzip -l "$aab" | awk '/audio_us_[a-z0-9]+\/assets\/audio\// {split($4,a,"/"); n[a[1]]++; t[a[1]]+=$1} END {for (k in n) printf "%s : %d fichiers, %.1f Mo ; ", k, n[k], t[k]/1048576}')
+          taille=$(ls -l "$aab" | awk '{printf "%.0f Mo", $5/1048576}')
+          if [ -z "$resume" ]; then echo "::error::AAB sans pack audio"; exit 1; fi
+          echo "::notice::AAB-AUDIO AAB $taille ; $resume"
       - name: Autorisations de l'application
         run: |
           aapt2=$(ls -d "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -1)

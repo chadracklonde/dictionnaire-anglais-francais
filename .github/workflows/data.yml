@@ -191,7 +191,13 @@ jobs:
             gh release view audio-us >/dev/null 2>&1 \
               || gh release create audio-us --prerelease --title "Audio américain" \
                    --notes "Enregistrements du Wiktionnaire (Wikimedia Commons), auteurs et licences dans audio_index.json. Produits par data.yml."
-            if gh release upload audio-us --clobber *.zip audio_index.json rapport_audio.md; then exit 0; fi
+            if gh release upload audio-us --clobber *.zip audio_index.json rapport_audio.md; then
+              # supprime les anciens packs qui ne font plus partie de cette production
+              for ancien in $(gh release view audio-us --json assets --jq '.assets[].name' | grep '^audio_us_.*\.zip$'); do
+                [ -f "$ancien" ] || gh release delete-asset audio-us "$ancien" --yes || true
+              done
+              exit 0
+            fi
             echo "tentative $essai échouée, nouvel essai dans 30 s"; sleep 30
           done
           exit 1

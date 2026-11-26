@@ -9,6 +9,7 @@ app/build.gradle(.kts). Ajoute aussi la bibliothèque Play Asset Delivery, le co
 gère les packs et lit les enregistrements, et le branche dans MainActivity.
 """
 import argparse
+import json
 import os
 import re
 import shutil
@@ -122,8 +123,17 @@ def brancher_kotlin(android):
 
 def installer(android, zips):
     packs = sorted(f[:-4] for f in os.listdir(zips) if f.startswith("audio_us_") and f.endswith(".zip"))
+    # Seuls comptent les packs décrits par l'index : un ancien zip resté dans la release est ignoré.
+    chemin_index = os.path.join(zips, "audio_index.json")
+    if os.path.exists(chemin_index):
+        with open(chemin_index, encoding="utf-8") as f:
+            voulus = set(json.load(f).get("packs", {}))
+        for p in packs:
+            if p not in voulus:
+                print("ignoré (absent de l'index) : %s" % p)
+        packs = [p for p in packs if p in voulus]
     if not packs:
-        raise RuntimeError("aucun audio_us_*.zip dans " + zips)
+        raise RuntimeError("aucun pack audio à installer dans " + zips)
     kts = os.path.exists(os.path.join(android, "settings.gradle.kts"))
     nb = {p: creer_module(android, p, os.path.join(zips, p + ".zip"), kts) for p in packs}
     patcher_settings(android, packs)

@@ -53,6 +53,18 @@ class AndroidAudio(unittest.TestCase):
         self.assertIn("AudioPacksPlugin(this, flutterEngine)", open(os.path.join(activite, "MainActivity.kt")).read())
         self.assertIn("package com.chadracklonde.dicoenfr", open(os.path.join(activite, "AudioPacksPlugin.kt")).read())
 
+    def test_pack_absent_de_l_index_ignore(self):
+        import json
+        android, zips = projet(True)
+        with zipfile.ZipFile(os.path.join(zips, "audio_us_2.zip"), "w") as z:
+            z.writestr("vieux.ogg", b"ogg")  # reste d'un ancien essai
+        with open(os.path.join(zips, "audio_index.json"), "w") as f:
+            json.dump({"packs": {"audio_us_core": {}, "audio_us_1": {}}}, f)
+        nb = a.installer(android, zips)
+        self.assertEqual(sorted(nb), ["audio_us_1", "audio_us_core"])
+        self.assertFalse(os.path.exists(os.path.join(android, "audio_us_2")))
+        self.assertNotIn("audio_us_2", open(os.path.join(android, "settings.gradle.kts")).read())
+
     def test_deux_fois_de_suite_sans_doublon(self):
         android, zips = projet(True)
         a.installer(android, zips)
