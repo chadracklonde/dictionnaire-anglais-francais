@@ -312,3 +312,12 @@ Demande de Chadrack : expressions anglaises avec leur traduction française, **b
   ni formes vieillies sur la fiche.
 - À faire : relancer `data.yml` (publier = oui) puis `build.yml` (audio = oui) ; vérifier dans les annotations le nombre d'expressions
   (rapport de la base) ; refaire les captures du Play Store.
+
+## 20. Lot 11 — apprendre avec les expressions et la voix (26 novembre 2026)
+
+- Étoile (favori, donc révision) et bouton « Écouter » sur chaque expression d'une liste (`CarteExpression`).
+- Réviser : « Apprendre 10 expressions » (crée la liste « Expressions » et y ajoute dix expressions soignées), « Phrases à trous »
+  (`ModeQuiz.trous` : exemples de la base dont un mot est retiré), « Dictée de mots » et « Dictée d'expressions » (`dictee_screen.dart`,
+  voix du téléphone, comparaison sans accents ni ponctuation).
+- Reste du plan : lot 12 (rappel quotidien avec permission de notification, lecture audio d'une liste, notes sur les expressions).
+  **Chadrack a demandé qu'on le lui rappelle après le lot 11.**

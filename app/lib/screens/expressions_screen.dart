@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 
 import '../app.dart';
 import '../data/libelles.dart';
+import '../data/speech.dart';
+import '../data/user_store.dart';
 import '../widgets/mise_en_page.dart';
 import 'entry_screen.dart';
 
@@ -221,6 +223,8 @@ class CarteExpression extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final registre = registreFr(ligne.registre);
+    final user = AppScope.of(context).user;
+    final cle = UserStore.cle(ligne.mot.mot, ligne.mot.nature);
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: InkWell(
@@ -232,8 +236,30 @@ class CarteExpression extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(ligne.mot.mot,
-                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(ligne.mot.mot,
+                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                  ),
+                  IconButton(
+                    tooltip: 'Écouter',
+                    icon: const Icon(Icons.volume_up_rounded),
+                    onPressed: () => speech.speak(ligne.mot.mot, accent: user.accent),
+                  ),
+                  ListenableBuilder(
+                    listenable: user,
+                    builder: (context, _) {
+                      final actif = user.estFavori(cle);
+                      return IconButton(
+                        tooltip: actif ? 'Retirer des favoris' : 'Ajouter aux favoris (à réviser)',
+                        icon: Icon(actif ? Icons.star_rounded : Icons.star_border_rounded),
+                        onPressed: () => user.basculerFavori(cle),
+                      );
+                    },
+                  ),
+                ],
+              ),
               if (ligne.fr.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 Text(ligne.fr, style: theme.textTheme.bodyLarge),
