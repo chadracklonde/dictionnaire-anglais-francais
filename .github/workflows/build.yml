@@ -12,6 +12,12 @@ on:
         type: choice
         default: "non"
         options: ["non", "oui"]
+      captures:
+        description: "Prendre de vraies captures d'écran dans un émulateur Android (release « captures »)"
+        required: true
+        type: choice
+        default: "non"
+        options: ["non", "oui"]
 
 jobs:
   tests:
@@ -243,3 +249,46 @@ jobs:
         with:
           name: dictionnaire-anglais-francais-macos
           path: dictionnaire-anglais-francais-macos.zip
+
+  # Captures d'écran réelles : l'APK est installé dans un émulateur et piloté (tools/captures_android.py).
+  captures:
+    needs: android
+    if: inputs.captures == 'oui'
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: dictionnaire-anglais-francais-android
+          path: apk
+      - name: Autoriser KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Émulateur et captures
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: python3 tools/captures_android.py apk/flutter-apk/app-release.apk captures
+      - name: Garder les captures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: captures-brutes
+          path: captures
+      - name: Publier les captures
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd captures && zip -q -r ../captures-brutes.zip . && cd ..
+          gh release view captures >/dev/null 2>&1 || gh release create captures --prerelease --title "Captures d'écran" --notes "Captures brutes de l'émulateur (build.yml, option captures)."
+          gh release upload captures --clobber captures-brutes.zip
