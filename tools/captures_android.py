@@ -69,12 +69,30 @@ def trouver(liste, contient=None, exact=None, classe=None, clic=None):
     return None
 
 
+def dialogue_systeme(liste):
+    """Ferme un dialogue « … isn't responding » de l'émulateur (le lanceur ou une autre appli système).
+    Renvoie True s'il y en avait un."""
+    if not trouver(liste, contient="isn't responding"):
+        return False
+    bouton = trouver(liste, exact="Close app") or trouver(liste, exact="Wait")
+    if bouton:
+        toucher(bouton)
+    return True
+
+
+def lancer_appli():
+    adb("shell", "monkey", "-p", PAQUET, "-c", "android.intent.category.LAUNCHER", "1")
+
+
 def attendre(timeout=60, **criteres):
     fin = time.time() + timeout
     while time.time() < fin:
-        n = trouver(noeuds(), **criteres)
+        liste = noeuds()
+        n = trouver(liste, **criteres)
         if n:
             return n
+        if dialogue_systeme(liste):
+            lancer_appli()
         time.sleep(1.5)
     raise RuntimeError("introuvable : %r" % (criteres,))
 
@@ -187,6 +205,9 @@ def main_court(apk, sortie):
         liste = noeuds()
         if trouver(liste, contient="Mot du jour"):
             break
+        if dialogue_systeme(liste):
+            lancer_appli()
+            continue
         passer = trouver(liste, exact="Passer")
         if passer:
             toucher(passer)
@@ -236,6 +257,9 @@ def main(apk, sortie):
             liste = noeuds()
             if trouver(liste, contient="Rechercher un mot", classe="EditText") or trouver(liste, contient="Mot du jour"):
                 return
+            if dialogue_systeme(liste):
+                lancer_appli()
+                continue
             passer = trouver(liste, exact="Passer")
             if passer:
                 toucher(passer)
