@@ -2,7 +2,7 @@
 
 > Lu automatiquement par Claude Code à l'ouverture du dépôt. **Aucun mot de passe ici** : les secrets
 > sont décrits (où ils sont, comment ils s'appellent), jamais écrits.
-> Dernière mise à jour : 26 novembre 2026 · état : phases 0 à 4 faites, lots 1 à 9 et audio fusionnés dans `main` (PR n° 1), fiche Play Store en cours de remplissage par Chadrack ; lot 10 « Expressions » (§19) en cours sur la branche `claude/hopeful-shannon-ohokkd`.
+> Dernière mise à jour : 26 novembre 2026 · état : phases 0 à 4 faites, lots 1 à 9 et audio fusionnés dans `main` (PR n° 1) ; lots 10 à 13 (expressions, apprentissage, écoute, rappel quotidien ; §19 à §22) compilés par la CI sur la branche `claude/hopeful-shannon-ohokkd` (PR n° 2) ; fiche Play Store en cours de remplissage par Chadrack ; AAB code 12 à essayer sur téléphone.
 
 ## 1. En bref
 
@@ -319,17 +319,14 @@ Demande de Chadrack : expressions anglaises avec leur traduction française, **b
 - Réviser : « Apprendre 10 expressions » (crée la liste « Expressions » et y ajoute dix expressions soignées), « Phrases à trous »
   (`ModeQuiz.trous` : exemples de la base dont un mot est retiré), « Dictée de mots » et « Dictée d'expressions » (`dictee_screen.dart`,
   voix du téléphone, comparaison sans accents ni ponctuation).
-- Reste du plan : lot 12 (rappel quotidien avec permission de notification, lecture audio d'une liste, notes sur les expressions).
-  **Chadrack a demandé qu'on le lui rappelle après le lot 11.**
+- Reste du plan : lot 12 (lecture audio d'une liste, notes sur les expressions : faits, §21) puis lot 13 (rappel quotidien, §22).
 
 ## 21. Lot 12 (partiel) — écoute (26 novembre 2026)
 
 - `ecoute_screen.dart` : « Écouter cette liste » (onglet Réviser) lit en boucle le mot en anglais puis son équivalent français
   (`Speech.dire`, voix du téléphone en-US/en-GB et fr-FR), écran éteint possible.
 - Notes sur les expressions : déjà possibles (la fiche d'une expression porte « Ajouter une note »).
-- **Rappel quotidien (notification) non fait** : il demande `flutter_local_notifications`, le désucrage Java dans `app/build.gradle`,
-  la permission `POST_NOTIFICATIONS`, des récepteurs dans le manifeste et la fiche Play Store à revoir ; trop risqué sans compilation locale.
-  À faire dans un lot à part, avec un patch Gradle comme `tools/android_audio.py`, après l'essai du lot 11 sur téléphone.
+- Le rappel quotidien a été fait dans un lot à part (§22), sans greffon.
 
 ## 22. Lot 13 — rappel quotidien (26 novembre 2026, version 0.10.0+12)
 
@@ -342,3 +339,10 @@ Demande de Chadrack : expressions anglaises avec leur traduction française, **b
 - `CONFIDENTIALITE.md` et `PLAYSTORE.md` mis à jour ; formulaire « sécurité des données » inchangé (rien n'est envoyé).
 - À vérifier sur téléphone : la permission est demandée à l'activation, la notification arrive vers l'heure choisie, un appui ouvre
   l'application, le rappel survit à un redémarrage.
+
+## 23. Captures du Play Store (26 novembre 2026)
+
+`tools/captures_android.py` (option `captures = oui` de `build.yml`, à lancer avec `audio = oui` pour ne pas écraser l'AAB de la release) :
+scénario téléphone complet (accueil, faux ami, fiche, carte de révision, quiz, expressions, phrases utiles, fiche d'idiome, « Expressions avec »,
+phrases à trous, réglages avec le rappel, thème sombre) puis scénario réduit `court` pour la tablette (`pixel_tablet`) et l'appareil pliable
+(`pixel_fold`), étapes non bloquantes. Résultat : release `captures` (`captures-brutes.zip`).

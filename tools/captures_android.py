@@ -132,6 +132,27 @@ def chercher_mot(mot):
     touche(66)  # Entrée
 
 
+def defiler(bas=True):
+    """Fait défiler la liste d'un écran de téléphone (ou de tablette)."""
+    taille = adb("shell", "wm", "size")
+    m = re.search(r"(\d+)x(\d+)", taille.split("Override")[-1] if "Override" in taille else taille)
+    largeur, hauteur = (int(m.group(1)), int(m.group(2))) if m else (1080, 2400)
+    x = largeur // 2
+    y1, y2 = (int(hauteur * 0.75), int(hauteur * 0.30)) if bas else (int(hauteur * 0.30), int(hauteur * 0.75))
+    adb("shell", "input", "swipe", str(x), str(y1), str(x), str(y2), "350")
+    time.sleep(1.0)
+
+
+def attendre_defilant(essais=6, **criteres):
+    """Cherche un élément en faisant défiler vers le bas jusqu'à ce qu'il apparaisse."""
+    for _ in range(essais):
+        n = trouver(noeuds(), **criteres)
+        if n:
+            return n
+        defiler()
+    raise RuntimeError("introuvable après défilement : %r" % (criteres,))
+
+
 def retour():
     touche(4)
     time.sleep(1.0)
@@ -141,6 +162,51 @@ def favori():
     n = trouver(noeuds(), contient="Ajouter aux favoris")
     if n:
         toucher(n)
+
+
+def main_court(apk, sortie):
+    """Scénario réduit pour les grands écrans (tablette, appareil pliable) : quelques captures utiles."""
+    global SORTIE
+    SORTIE = sortie
+    os.makedirs(sortie, exist_ok=True)
+    adb("install", "-r", apk, timeout=600)
+    adb("shell", "settings", "put", "global", "window_animation_scale", "0")
+    adb("shell", "monkey", "-p", PAQUET, "-c", "android.intent.category.LAUNCHER", "1")
+    fin = time.time() + 420
+    while time.time() < fin:
+        liste = noeuds()
+        if trouver(liste, contient="Mot du jour"):
+            break
+        passer = trouver(liste, exact="Passer")
+        if passer:
+            toucher(passer)
+            continue
+        time.sleep(3)
+    else:
+        print("ECHEC l'accueil n'est jamais apparu", flush=True)
+        return 1
+    etape("accueil", lambda: capturer("t01_accueil"))
+
+    def fiche():
+        chercher_mot("borrow")
+        attendre(60, contient="Exemples")
+        capturer("t02_fiche")
+        retour()
+    etape("fiche", fiche)
+
+    def expressions():
+        toucher(attendre_defilant(exact="Expressions", clic=True))
+        attendre(30, contient="Chercher une expression")
+        capturer("t03_expressions")
+        retour()
+    etape("expressions", expressions)
+
+    def reviser():
+        toucher(attendre(30, exact="Réviser"))
+        attendre(30, contient="Quels mots")
+        capturer("t04_reviser")
+    etape("reviser", reviser)
+    return 0
 
 
 def main(apk, sortie):
@@ -223,6 +289,51 @@ def main(apk, sortie):
         retour()
     etape("quiz", quiz)
 
+    def expressions():
+        toucher(attendre(30, exact="Accueil"))
+        toucher(attendre_defilant(exact="Expressions", clic=True))
+        attendre(30, contient="Chercher une expression")
+        capturer("08_expressions")
+        toucher(attendre(30, contient="Phrases utiles"))
+        time.sleep(2)
+        capturer("09_phrases_utiles")
+        retour()
+    etape("expressions", expressions)
+
+    def expression_fiche():
+        chercher_mot("kick the bucket")
+        attendre(60, contient="Équivalent recommandé")
+        capturer("10_expression")
+        retour()
+    etape("expression_fiche", expression_fiche)
+
+    def expression_mot():
+        chercher_mot("bucket")
+        attendre(60, contient="bucket")
+        for _ in range(4):
+            if trouver(noeuds(), contient="Expressions avec"):
+                break
+            defiler()
+        capturer("11_expressions_avec")
+        retour()
+    etape("expression_mot", expression_mot)
+
+    def trous():
+        toucher(attendre(30, exact="Réviser"))
+        toucher(attendre_defilant(contient="Phrases à trous"))
+        attendre(90, contient="Complétez")
+        capturer("12_trous")
+        retour()
+    etape("trous", trous)
+
+    def reglages():
+        toucher(attendre(30, exact="Accueil"))
+        toucher(attendre(30, contient="Réglages"))
+        attendre_defilant(contient="Rappel quotidien")
+        capturer("13_reglages_rappel")
+        retour()
+    etape("reglages", reglages)
+
     def sombre():
         adb("shell", "cmd", "uimode", "night", "yes")
         time.sleep(3)
@@ -235,4 +346,5 @@ def main(apk, sortie):
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1], sys.argv[2]))
+    court = len(sys.argv) > 3 and sys.argv[3] == "court"
+    sys.exit((main_court if court else main)(sys.argv[1], sys.argv[2]))
