@@ -115,42 +115,52 @@ class _QuizScreenState extends State<QuizScreen> {
 
   /// Phrases d'exemple dont on a retiré un mot courant : on choisit le bon parmi quatre.
   Future<List<_Question>> _questionsTrous(AppServices services) async {
-    List<String> candidats;
-    try {
-      candidats = await services.source.motsHasard(40);
-    } catch (_) {
-      return const [];
-    }
-    if (candidats.length < 8) return const [];
     final questions = <_Question>[];
-    for (final mot in candidats) {
-      if (questions.length >= _nombre) break;
-      if (mot.length < 4) continue;
-      final trouves = await services.source.motsParRecherche(plier(mot));
-      if (trouves.isEmpty) continue;
-      // Pas de petits mots-outils (the, that, he…) : ni en réponse, ni au rang des plus courants.
-      final rang = trouves.first.rang;
-      if (rang == null || rang < 300) continue;
-      final fiche = await services.moteur.fiche(trouves.first);
-      final motif = RegExp('\\b${RegExp.escape(mot)}\\b', caseSensitive: false);
-      String? phrase;
-      for (final s in fiche.sens) {
-        if (s.exemple.length <= 90 && !s.exemple.contains('(') && motif.hasMatch(s.exemple)) {
-          phrase = s.exemple;
-          break;
-        }
+    final pool = <String>{};
+    for (var lot = 0; lot < 5 && questions.length < _nombre; lot++) {
+      List<String> candidats;
+      try {
+        candidats = await services.source.motsHasard(40);
+      } catch (_) {
+        break;
       }
-      if (phrase == null) continue;
-      final autres = [for (final c in candidats) if (c.length >= 4 && c.toLowerCase() != mot.toLowerCase()) c]..shuffle();
-      final options = <String>[mot.toLowerCase(), ...autres.take(3).map((c) => c.toLowerCase())];
-      final equivalent = fiche.equivalents.isEmpty ? '' : fiche.equivalents.first.fr;
-      questions.add(_Question(
-        null,
-        'Complétez : « ${phrase.replaceFirst(motif, '_____')} »',
-        mot.toLowerCase(),
-        options.toSet().toList()..shuffle(),
-        '« $phrase »${equivalent.isEmpty ? '' : ' — $mot : $equivalent'}',
-      ));
+      pool.addAll([for (final c in candidats) if (c.length >= 4) c.toLowerCase()]);
+      for (final mot in candidats) {
+        if (questions.length >= _nombre) break;
+        if (mot.length < 4) continue;
+        final trouves = await services.source.motsParRecherche(plier(mot));
+        if (trouves.isEmpty) continue;
+        // Pas de petits mots-outils (the, that, he…) : on exige un rang d'au moins 150 quand il est connu.
+        final rangs = [for (final t in trouves) if (t.rang != null) t.rang!];
+        if (rangs.isNotEmpty && rangs.reduce((a, b) => a < b ? a : b) < 150) continue;
+        final motif = RegExp('\\b${RegExp.escape(mot)}\\b', caseSensitive: false);
+        String? phrase;
+        Fiche? source;
+        for (final t in trouves) {
+          final fiche = await services.moteur.fiche(t);
+          for (final x in fiche.sens) {
+            // Une parenthèse « (Compare …) » donnerait la réponse : on l'enlève avant de choisir.
+            final propre = x.exemple.replaceAll(RegExp(r'\s*\([^)]*\)'), '').trim();
+            if (propre.isNotEmpty && propre.length <= 90 && motif.hasMatch(propre)) {
+              phrase = propre;
+              source = fiche;
+              break;
+            }
+          }
+          if (phrase != null) break;
+        }
+        if (phrase == null || source == null || pool.length < 4) continue;
+        final autres = pool.where((c) => c != mot.toLowerCase()).toList()..shuffle();
+        final options = <String>{mot.toLowerCase(), ...autres.take(3)};
+        final equivalent = source.equivalents.isEmpty ? '' : source.equivalents.first.fr;
+        questions.add(_Question(
+          null,
+          'Complétez : « ${phrase.replaceFirst(motif, '_____')} »',
+          mot.toLowerCase(),
+          options.toList()..shuffle(),
+          '« $phrase »${equivalent.isEmpty ? '' : ' — $mot : $equivalent'}',
+        ));
+      }
     }
     return questions;
   }
