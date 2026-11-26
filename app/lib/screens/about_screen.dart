@@ -108,6 +108,13 @@ class _AboutScreenState extends State<AboutScreen> {
           ),
           const SizedBox(height: 16),
           OutlinedButton.icon(
+            icon: const Icon(Icons.privacy_tip_outlined),
+            label: const Text('Politique de confidentialité'),
+            onPressed: () => _ouvrir(
+                'https://github.com/chadracklonde/dictionnaire-anglais-francais/blob/main/CONFIDENTIALITE.md'),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
             icon: const Icon(Icons.description_outlined),
             label: const Text('Licences des bibliothèques'),
             onPressed: () => showLicensePage(
