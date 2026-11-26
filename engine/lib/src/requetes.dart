@@ -143,10 +143,12 @@ SELECT mot FROM (
   SELECT mot, 0 AS tour, id FROM mots, d
   WHERE id >= d.r AND rang IS NOT NULL AND rang <= 10000 AND nature != 'name'
     AND mot NOT LIKE '% %' AND mot NOT GLOB '*[A-Z]*'
+    AND EXISTS (SELECT 1 FROM traductions t WHERE t.mot_id = mots.id AND t.source = 'en+fr')
   UNION ALL
   SELECT mot, 1 AS tour, id FROM mots, d
   WHERE id < d.r AND rang IS NOT NULL AND rang <= 10000 AND nature != 'name'
     AND mot NOT LIKE '% %' AND mot NOT GLOB '*[A-Z]*'
+    AND EXISTS (SELECT 1 FROM traductions t WHERE t.mot_id = mots.id AND t.source = 'en+fr')
 )
 ORDER BY tour, id
 LIMIT ?

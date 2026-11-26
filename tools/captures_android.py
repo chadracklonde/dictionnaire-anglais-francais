@@ -116,6 +116,15 @@ def touche(code):
 def capturer(nom):
     time.sleep(1.5)
     png = adb("exec-out", "screencap", "-p", binaire=True)
+    if png[:4] != b"\x89PNG":
+        # Appareil pliable : plusieurs écrans, Android ajoute un avertissement texte avant l'image.
+        debut = png.find(b"\x89PNG")
+        if debut >= 0:
+            png = png[debut:]
+        else:
+            ids = re.findall(r"Display (\d+)", adb("shell", "dumpsys", "SurfaceFlinger", "--display-id"))
+            if ids:
+                png = adb("exec-out", "screencap", "-p", "-d", ids[0], binaire=True)
     with open(os.path.join(SORTIE, nom + ".png"), "wb") as f:
         f.write(png)
     print("capture", nom, len(png) // 1024, "Ko", flush=True)
