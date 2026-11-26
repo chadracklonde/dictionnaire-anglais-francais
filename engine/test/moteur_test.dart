@@ -6,6 +6,50 @@ import 'source_memoire.dart';
 void main() {
   final moteur = Moteur(SourceMemoire());
 
+  test('mots liés, verbes à particule et faux amis dans la fiche', () async {
+    final chien = await moteur.fiche(SourceMemoire.motDog);
+    expect(chien.synonymes, ['hound']);
+    expect(chien.contraires, ['cat']);
+    expect(chien.famille, ['doggy']);
+    expect(chien.particules, isEmpty);
+    expect(chien.fauxAmi, isNull);
+
+    final aller = await moteur.fiche(SourceMemoire.motGoV);
+    expect(aller.particules, ['go on', 'go out']);
+    // un nom n'a pas de verbes à particule, même s'il porte le même texte
+    expect((await moteur.fiche(SourceMemoire.motGoN)).particules, isEmpty);
+
+    final piege = await moteur.fiche(const Mot(id: 99, mot: 'actually', nature: 'adv'));
+    expect(piege.fauxAmi?.piege, 'actuellement');
+  });
+
+  test('corrections après une faute de frappe', () async {
+    expect(await moteur.corrections('wrld'), contains('world'));
+    expect(await moteur.corrections('helo'), contains('hello'));
+    expect(await moteur.corrections('chein'), contains('chien'));
+    // première lettre fausse : non corrigée ; mot trop court : aucune correction
+    expect(await moteur.corrections('xorld'), isEmpty);
+    expect(await moteur.corrections('wo'), isEmpty);
+    final r = await moteur.chercher('wrld');
+    expect(r.vide, isTrue);
+    expect(r.suggestions, contains('world'));
+  });
+
+  test('recherche par motif', () async {
+    expect(Moteur.estMotif('d*'), isTrue);
+    expect(Moteur.estMotif('dog'), isFalse);
+    expect(await moteur.chercherMotif('d*'), ['dog']);
+    expect(await moteur.chercherMotif('?o?ld'), ['world']);
+    expect(await moteur.chercherMotif('*'), isEmpty);
+    expect(await moteur.chercherMotif('zz*'), isEmpty);
+  });
+
+  test('recherche par définition', () async {
+    final r = await moteur.chercherParDefinition('a domesticated canine');
+    expect(r.single.mot.mot, 'dog');
+    expect(await moteur.chercherParDefinition('a b'), isEmpty);
+  });
+
   test('mot direct', () async {
     final r = await moteur.chercher('Hello');
     expect(r.fiches.single.mot.mot, 'hello');

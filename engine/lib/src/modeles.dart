@@ -101,6 +101,40 @@ class EntreeInverse {
   bool get confirme => equivalents.any((e) => e.confirme);
 }
 
+/// Mot lié : [type] vaut 'syn' (synonyme), 'ant' (contraire) ou 'der' (même famille).
+class Relation {
+  const Relation(this.type, this.mot);
+
+  final String type;
+  final String mot;
+}
+
+/// Faux ami : [piege] est le mot français qu'on croit à tort équivalent, [vrai] le vrai sens.
+class FauxAmi {
+  const FauxAmi({required this.mot, required this.piege, required this.vrai});
+
+  final String mot;
+  final String piege;
+  final String vrai;
+}
+
+/// Mot d'écriture proche d'une faute de frappe : [recherche] est sa forme pliée.
+class MotProche {
+  const MotProche(this.mot, this.recherche, this.rang);
+
+  final String mot;
+  final String recherche;
+  final int? rang;
+}
+
+/// Un mot trouvé par une de ses définitions, avec la définition qui correspond.
+class ParDefinition {
+  const ParDefinition(this.mot, this.extrait);
+
+  final Mot mot;
+  final String extrait;
+}
+
 /// Fiche complète d'un mot anglais.
 class Fiche {
   const Fiche({
@@ -113,6 +147,9 @@ class Fiche {
     this.prononciations = const [],
     this.formeDemandee,
     this.etiquetteRenvoi = '',
+    this.relations = const [],
+    this.particules = const [],
+    this.fauxAmi,
   });
 
   final Mot mot;
@@ -128,6 +165,21 @@ class Fiche {
 
   /// Nature du renvoi (« past », « plural »…), si la fiche vient d'une forme.
   final String etiquetteRenvoi;
+
+  /// Synonymes, contraires et mots de la même famille.
+  final List<Relation> relations;
+
+  /// Verbes à particule (give up, give in…), pour un verbe.
+  final List<String> particules;
+
+  /// Mise en garde si le mot est un faux ami.
+  final FauxAmi? fauxAmi;
+
+  List<String> _de(String type) => [for (final r in relations) if (r.type == type) r.mot];
+
+  List<String> get synonymes => _de('syn');
+  List<String> get contraires => _de('ant');
+  List<String> get famille => _de('der');
 }
 
 enum Direction { anglaisFrancais, francaisAnglais }

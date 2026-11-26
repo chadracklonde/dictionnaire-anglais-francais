@@ -60,6 +60,94 @@ WHERE mot_id = ?
 ORDER BY CASE accent WHEN 'us' THEN 0 WHEN 'uk' THEN 1 ELSE 2 END, id
 ''';
 
+/// Synonymes (syn), contraires (ant) et mots de la même famille (der). Paramètre : id du mot.
+const String requeteRelations = '''
+SELECT type, mot FROM relations
+WHERE mot_id = ?
+ORDER BY CASE type WHEN 'syn' THEN 0 WHEN 'ant' THEN 1 ELSE 2 END, rowid
+''';
+
+/// Verbes à particule d'un verbe (give → give up, give in). Paramètres : borne basse « give »
+/// suivie d'une espace, borne haute « give » suivie de « ! » (texte plié), nombre maximal de lignes.
+const String requeteVerbesAParticule = '''
+SELECT mot FROM mots
+WHERE nature = 'verb' AND mot_recherche > ? AND mot_recherche < ?
+ORDER BY rang IS NULL, rang, mot
+LIMIT ?
+''';
+
+/// Faux ami écrit à la main. Paramètre : mot anglais en minuscules.
+const String requeteFauxAmi = '''
+SELECT mot, piege, vrai FROM faux_amis WHERE mot = ?
+''';
+
+/// Mots anglais d'écriture proche (correction d'une faute de frappe). Paramètres : borne basse et
+/// borne haute de la première lettre (texte plié), longueur minimale, longueur maximale, limite.
+const String requeteMotsProchesAnglais = '''
+SELECT mot, mot_recherche AS recherche, MIN(rang) AS rang FROM mots
+WHERE mot_recherche >= ? AND mot_recherche < ? AND length(mot_recherche) BETWEEN ? AND ?
+GROUP BY mot_recherche
+ORDER BY rang IS NULL, rang
+LIMIT ?
+''';
+
+/// Mêmes paramètres, pour les équivalents français.
+const String requeteMotsProchesFrancais = '''
+SELECT fr AS mot, fr_recherche AS recherche, NULL AS rang FROM traductions
+WHERE fr_recherche >= ? AND fr_recherche < ? AND length(fr_recherche) BETWEEN ? AND ?
+GROUP BY fr_recherche
+LIMIT ?
+''';
+
+/// Recherche par motif (inter*, c?t). Paramètres : borne basse et haute du début fixe du motif,
+/// motif GLOB, limite.
+const String requeteMotsParMotif = '''
+SELECT mot, MIN(rang) AS rang FROM mots
+WHERE mot_recherche >= ? AND mot_recherche < ? AND mot_recherche GLOB ?
+GROUP BY mot_recherche
+ORDER BY rang IS NULL, rang, mot_recherche
+LIMIT ?
+''';
+
+/// Recherche dans les définitions anglaises. Paramètres : trois motifs LIKE (« % » si inutilisé), limite.
+const String requeteParDefinitionAnglaise = '''
+SELECT m.id, m.mot, m.nature, m.rang, s.definition AS extrait
+FROM sens s JOIN mots m ON m.id = s.mot_id
+WHERE s.definition LIKE ? AND s.definition LIKE ? AND s.definition LIKE ?
+ORDER BY m.rang IS NULL, m.rang, m.id
+LIMIT ?
+''';
+
+/// Recherche dans les définitions françaises. Mêmes paramètres.
+const String requeteParDefinitionFrancaise = '''
+SELECT m.id, m.mot, m.nature, m.rang, d.texte AS extrait
+FROM definitions_fr d JOIN mots m ON m.id = d.mot_id
+WHERE d.texte LIKE ? AND d.texte LIKE ? AND d.texte LIKE ?
+ORDER BY m.rang IS NULL, m.rang, m.id
+LIMIT ?
+''';
+
+/// Équivalents français tirés au hasard (mauvaises réponses du quiz). Paramètre : nombre voulu.
+const String requeteEquivalentsHasard = '''
+SELECT fr FROM traductions
+WHERE id >= (ABS(RANDOM()) % (SELECT MAX(id) FROM traductions)) + 1
+  AND source = 'en+fr' AND length(fr) <= 25 AND fr NOT LIKE '% %'
+LIMIT ?
+''';
+
+/// Mots anglais courants tirés au hasard (mauvaises réponses du quiz inverse). Paramètre : nombre voulu.
+const String requeteMotsHasard = '''
+SELECT mot FROM mots
+WHERE id >= (ABS(RANDOM()) % (SELECT MAX(id) FROM mots)) + 1
+  AND rang IS NOT NULL AND rang <= 20000 AND nature != 'name' AND mot NOT LIKE '% %'
+LIMIT ?
+''';
+
+/// Faux amis tirés au hasard (quiz). Paramètre : nombre voulu.
+const String requeteFauxAmisHasard = '''
+SELECT mot, piege, vrai FROM faux_amis ORDER BY RANDOM() LIMIT ?
+''';
+
 /// Français → anglais. Paramètres : texte plié, nombre maximal de lignes.
 const String requeteAnglaisParFrancais = '''
 SELECT m.id, m.mot, m.nature, m.rang, t.fr, t.etiquette, t.genre, t.source

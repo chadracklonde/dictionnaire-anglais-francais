@@ -56,6 +56,21 @@ class Base(unittest.TestCase):
         return {r[0]: r[1] for r in self.q(
             "SELECT fr, source FROM traductions WHERE mot_id = ?", self.mot(word, nature))}
 
+    # --- mots liés et faux amis
+    def test_relations(self):
+        rel = self.q("SELECT type, mot FROM relations WHERE mot_id = ? ORDER BY type, mot",
+                     self.mot("dog", "noun"))
+        # « dog » est écarté de ses propres synonymes
+        self.assertEqual(rel, [("ant", "cat"), ("syn", "hound")])
+        self.assertGreaterEqual(self.c_en["relations"], 2)
+
+    def test_faux_amis(self):
+        self.assertGreaterEqual(self.fin["faux_amis"], 40)
+        self.assertEqual(self.q("SELECT piege FROM faux_amis WHERE mot = 'library'"), [("librairie",)])
+
+    def test_verbe_a_particule_garde(self):
+        self.assertIsNotNone(self.mot("go on", "verb"))
+
     # --- lecture
     def test_compteurs_de_lecture(self):
         self.assertEqual(self.c_en["illisibles"], 1)

@@ -1,11 +1,17 @@
 import 'package:dicoenfr_engine/dicoenfr_engine.dart';
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../app.dart';
+import '../data/audio_index.dart';
+import '../data/audio_lecture.dart';
 import '../data/libelles.dart';
 import '../data/speech.dart';
 import '../data/user_store.dart';
 import '../screens/conjugation_screen.dart';
+import '../screens/result_screen.dart';
+import 'listes.dart';
 
 /// Fiche d'un mot anglais : équivalents français en avant, définitions anglaises repliables.
 class FicheCard extends StatefulWidget {
@@ -21,16 +27,70 @@ class _FicheCardState extends State<FicheCard> {
   static const int _equivalentsVisibles = 8;
   bool _tousLesEquivalents = false;
   bool _definitions = false;
+  EntreeAudio? _credit;
 
   Future<void> _lire(BuildContext context) async {
     final services = AppScope.of(context);
     final messenger = ScaffoldMessenger.of(context);
+    if (services.user.accent == 'us') {
+      // Les enregistrements sont américains ; pour l'accent britannique, la voix du téléphone.
+      final entree = await LectureAudio.lire(widget.fiche);
+      if (mounted) setState(() => _credit = entree);
+      if (entree != null) return;
+    } else if (_credit != null) {
+      setState(() => _credit = null);
+    }
     final ok = await speech.speak(widget.fiche.mot.mot, accent: services.user.accent);
     if (!ok && mounted) {
       messenger.showSnackBar(const SnackBar(
         content: Text('Aucune voix anglaise n\'est installée sur cet appareil.'),
       ));
     }
+  }
+
+  Future<void> _basculerFavori(BuildContext context, String cle) async {
+    final user = AppScope.of(context).user;
+    final messenger = ScaffoldMessenger.of(context);
+    final position = user.favoris.indexOf(cle);
+    final retire = position >= 0;
+    await user.basculerFavori(cle);
+    if (!retire) return;
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: const Text('Retiré des favoris.'),
+        action: SnackBarAction(label: 'Annuler', onPressed: () => user.insererFavori(position, cle)),
+      ));
+  }
+
+  Future<void> _modifierNote(BuildContext context, String cle) async {
+    final user = AppScope.of(context).user;
+    final texte = await demanderTexte(
+      context,
+      titre: 'Ma note sur « ${widget.fiche.mot.mot} »',
+      initial: user.noteDe(cle),
+      indication: 'Un exemple, une astuce pour retenir…',
+      lignes: 3,
+      max: 2000,
+    );
+    if (texte != null) await user.definirNote(cle, texte);
+  }
+
+  void _partager() {
+    final fiche = widget.fiche;
+    final eq = fiche.equivalents.take(6).map((e) => e.fr).join(', ');
+    final texte = '${fiche.mot.mot} (${natureFr(fiche.mot.nature)})'
+        '${eq.isEmpty ? '' : ' : $eq'}\n— Anglais Français';
+    Share.share(texte);
+  }
+
+  Future<void> _signaler() async {
+    final mot = widget.fiche.mot;
+    final url = Uri.https('github.com', '/chadracklonde/dictionnaire-anglais-francais/issues/new', {
+      'title': 'Erreur dans la fiche « ${mot.mot} » (${natureFr(mot.nature)})',
+      'body': 'Mot : ${mot.mot}\nNature : ${mot.nature}\n\nCe qui est faux ou manque :\n',
+    });
+    await launchUrl(url, mode: LaunchMode.externalApplication);
   }
 
   String _api(String accent) {
@@ -44,11 +104,14 @@ class _FicheCardState extends State<FicheCard> {
     final theme = Theme.of(context);
     final services = AppScope.of(context);
     final cle = UserStore.cle(fiche.mot.mot, fiche.mot.nature);
-    final favori = services.user.estFavori(cle);
     final us = _api('us');
     final uk = _api('uk');
 
     final equivalents = fiche.equivalents;
+    final exemples = [
+      for (final x in fiche.sens)
+        if (x.exemple.isNotEmpty) x.exemple
+    ].take(2).toList();
     final visibles = _tousLesEquivalents || equivalents.length <= _equivalentsVisibles
         ? equivalents
         : equivalents.take(_equivalentsVisibles).toList();
@@ -88,9 +151,20 @@ class _FicheCardState extends State<FicheCard> {
                   onPressed: () => _lire(context),
                 ),
                 IconButton(
-                  tooltip: favori ? 'Retirer des favoris' : 'Ajouter aux favoris',
-                  icon: Icon(favori ? Icons.star_rounded : Icons.star_border_rounded),
-                  onPressed: () => services.user.basculerFavori(cle),
+                  tooltip: 'Partager',
+                  icon: const Icon(Icons.share_rounded),
+                  onPressed: _partager,
+                ),
+                ListenableBuilder(
+                  listenable: services.user,
+                  builder: (context, _) {
+                    final actif = services.user.estFavori(cle);
+                    return IconButton(
+                      tooltip: actif ? 'Retirer des favoris' : 'Ajouter aux favoris',
+                      icon: Icon(actif ? Icons.star_rounded : Icons.star_border_rounded),
+                      onPressed: () => _basculerFavori(context, cle),
+                    );
+                  },
                 ),
               ],
             ),
@@ -103,12 +177,58 @@ class _FicheCardState extends State<FicheCard> {
                   style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
               ),
+            if (fiche.fauxAmi != null)
+              Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.errorContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Semantics(
+                  container: true,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.warning_amber_rounded, color: theme.colorScheme.onErrorContainer),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Faux ami : « ${fiche.mot.mot} » ne veut pas dire « ${fiche.fauxAmi!.piege} ». '
+                          'Il signifie : ${fiche.fauxAmi!.vrai}.',
+                          style: theme.textTheme.bodyMedium
+                              ?.copyWith(color: theme.colorScheme.onErrorContainer),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             if (us.isNotEmpty || uk.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
                   [if (us.isNotEmpty) 'US $us', if (uk.isNotEmpty) 'UK $uk'].join('   '),
                   style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+              ),
+            if (_credit != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: InkWell(
+                  onTap: () {
+                    final url = _credit!.licenceUrl.isNotEmpty ? _credit!.licenceUrl : _credit!.page;
+                    if (url.startsWith('https://')) {
+                      launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                    }
+                  },
+                  child: Text(
+                    _credit!.credit,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
                 ),
               ),
             const SizedBox(height: 6),
@@ -135,6 +255,17 @@ class _FicheCardState extends State<FicheCard> {
                 Padding(
                   padding: const EdgeInsets.only(top: 2),
                   child: Text('• $d', style: theme.textTheme.bodyMedium),
+                ),
+            ],
+            if (exemples.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text('Exemples', style: theme.textTheme.titleSmall),
+              const SizedBox(height: 2),
+              for (final e in exemples)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text('« $e »',
+                      style: theme.textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic)),
                 ),
             ],
             if (fiche.sens.isNotEmpty) ...[
@@ -171,6 +302,10 @@ class _FicheCardState extends State<FicheCard> {
                 style: theme.textTheme.bodyMedium,
               ),
             ],
+            _MotsLies(titre: 'Synonymes', mots: fiche.synonymes),
+            _MotsLies(titre: 'Contraires', mots: fiche.contraires),
+            _MotsLies(titre: 'Verbes à particule', mots: fiche.particules),
+            _MotsLies(titre: 'Même famille', mots: fiche.famille),
             if (fiche.mot.nature == 'verb') ...[
               const SizedBox(height: 8),
               Align(
@@ -184,8 +319,83 @@ class _FicheCardState extends State<FicheCard> {
                 ),
               ),
             ],
+            ListenableBuilder(
+              listenable: services.user,
+              builder: (context, _) {
+                final note = services.user.noteDe(cle);
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (note.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Text('Ma note', style: theme.textTheme.titleSmall),
+                      const SizedBox(height: 2),
+                      Text(note, style: theme.textTheme.bodyMedium),
+                    ],
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 4,
+                      children: [
+                        TextButton.icon(
+                          icon: const Icon(Icons.edit_note_rounded, size: 20),
+                          label: Text(note.isEmpty ? 'Ajouter une note' : 'Modifier la note'),
+                          onPressed: () => _modifierNote(context, cle),
+                        ),
+                        TextButton.icon(
+                          icon: const Icon(Icons.playlist_add_rounded, size: 20),
+                          label: const Text('Listes'),
+                          onPressed: () => afficherChoixListes(context, cle),
+                        ),
+                        TextButton.icon(
+                          icon: const Icon(Icons.flag_outlined, size: 18),
+                          label: const Text('Signaler une erreur'),
+                          onPressed: _signaler,
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Une rangée de mots liés ; un appui lance la recherche du mot.
+class _MotsLies extends StatelessWidget {
+  const _MotsLies({required this.titre, required this.mots});
+
+  final String titre;
+  final List<String> mots;
+
+  @override
+  Widget build(BuildContext context) {
+    if (mots.isEmpty) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(titre, style: theme.textTheme.titleSmall),
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: 6,
+            runSpacing: 0,
+            children: [
+              for (final m in mots)
+                ActionChip(
+                  label: Text(m),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => ResultScreen(requete: m)),
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }

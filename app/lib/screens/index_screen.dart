@@ -1,13 +1,20 @@
+import 'dart:async';
+
 import 'package:dicoenfr_engine/dicoenfr_engine.dart';
 import 'package:flutter/material.dart';
 
 import '../app.dart';
+import '../widgets/menu_mot.dart';
 import '../widgets/mise_en_page.dart';
+import 'motif_screen.dart';
 import 'result_screen.dart';
 
 /// Index alphabétique des mots anglais, par lettre, paginé par curseur.
 class IndexScreen extends StatefulWidget {
-  const IndexScreen({super.key});
+  const IndexScreen({super.key, this.lettreInitiale = 'a'});
+
+  /// Lettre affichée à l'ouverture (l'accueil ouvre l'index sur la lettre touchée).
+  final String lettreInitiale;
 
   @override
   State<IndexScreen> createState() => _IndexScreenState();
@@ -18,15 +25,22 @@ class _IndexScreenState extends State<IndexScreen> {
   static const String _lettres = 'abcdefghijklmnopqrstuvwxyz';
 
   final _defilement = ScrollController();
+  final _recherche = TextEditingController();
+  Timer? _delai;
+  List<String> _suggestions = const [];
   String _lettre = 'a';
+  bool _large = false;
+  String? _selection;
+  String _debut = 'a';
   final List<EntreeIndex> _entrees = [];
   bool _charge = false;
   bool _fini = false;
 
-  /// Clé située juste avant tous les mots de la lettre.
-  static String _curseurInitial(String lettre) {
-    final avant = lettre == 'a' ? '`' : String.fromCharCode(lettre.codeUnitAt(0) - 1);
-    return '$avant￿';
+  /// Clé située juste avant tous les mots qui commencent par [debut] (une ou deux lettres).
+  static String _curseurInitial(String debut) {
+    final c = debut.codeUnitAt(debut.length - 1);
+    final avant = c == 0x61 ? '`' : String.fromCharCode(c - 1);
+    return '${debut.substring(0, debut.length - 1)}$avant\uffff';
   }
 
   @override
@@ -35,18 +49,61 @@ class _IndexScreenState extends State<IndexScreen> {
     _defilement.addListener(() {
       if (_defilement.position.extentAfter < 600) _suite();
     });
-    WidgetsBinding.instance.addPostFrameCallback((_) => _recommencer('a'));
+    WidgetsBinding.instance.addPostFrameCallback((_) => _recommencer(widget.lettreInitiale));
   }
 
   @override
   void dispose() {
+    _delai?.cancel();
+    _recherche.dispose();
     _defilement.dispose();
     super.dispose();
   }
 
-  Future<void> _recommencer(String lettre) async {
+  void _surSaisie(String texte) {
+    setState(() {});
+    _delai?.cancel();
+    if (texte.trim().isEmpty) {
+      setState(() => _suggestions = const []);
+      return;
+    }
+    _delai = Timer(const Duration(milliseconds: 180), () async {
+      if (!mounted) return;
+      final liste = await AppScope.of(context).moteur.suggerer(texte);
+      if (!mounted || _recherche.text != texte) return;
+      setState(() => _suggestions = liste);
+    });
+  }
+
+  void _chercher(String texte) {
+    final t = texte.trim();
+    if (t.isEmpty) return;
+    FocusScope.of(context).unfocus();
+    if (Moteur.estMotif(t)) {
+      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => MotifScreen(motif: t)));
+    } else {
+      _afficher(t);
+    }
+  }
+
+  /// Sur grand écran le résultat s'ouvre à droite de la liste, sinon dans un nouvel écran.
+  void _afficher(String requete) {
+    if (_large) {
+      setState(() => _selection = requete);
+    } else {
+      Navigator.of(context)
+          .push(MaterialPageRoute<void>(builder: (_) => ResultScreen(requete: requete)));
+    }
+  }
+
+  Widget? _detail() => _selection == null
+      ? null
+      : ResultScreen(key: ValueKey(_selection), requete: _selection!);
+
+  Future<void> _recommencer(String lettre, {String? debut}) async {
     setState(() {
       _lettre = lettre;
+      _debut = debut ?? lettre;
       _entrees.clear();
       _fini = false;
     });
@@ -58,7 +115,7 @@ class _IndexScreenState extends State<IndexScreen> {
     if (_charge || _fini) return;
     _charge = true;
     final lettre = _lettre;
-    final apres = _entrees.isEmpty ? _curseurInitial(lettre) : _entrees.last.cle;
+    final apres = _entrees.isEmpty ? _curseurInitial(_debut) : _entrees.last.cle;
     final page = await AppScope.of(context).source.indexAnglais(apres, _page);
     _charge = false;
     if (!mounted || lettre != _lettre) return;
@@ -79,8 +136,55 @@ class _IndexScreenState extends State<IndexScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Index')),
-      body: Column(
+      body: LayoutBuilder(builder: (context, c) {
+      _large = c.maxWidth >= largeurDeuxVolets;
+      final liste = Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: TextField(
+              controller: _recherche,
+              textInputAction: TextInputAction.search,
+              autocorrect: false,
+              enableSuggestions: false,
+              decoration: InputDecoration(
+                hintText: 'Un mot anglais ou français',
+                prefixIcon: const Icon(Icons.search_rounded),
+                suffixIcon: _recherche.text.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: 'Effacer',
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => setState(() {
+                          _recherche.clear();
+                          _suggestions = const [];
+                        }),
+                      ),
+                border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(28))),
+              ),
+              onChanged: _surSaisie,
+              onSubmitted: _chercher,
+            ),
+          ),
+          if (_suggestions.isNotEmpty && _recherche.text.trim().isNotEmpty)
+            Expanded(
+              child: ListView(
+                padding: padPage(context, v: 0),
+                children: [
+                  for (final s in _suggestions)
+                    ListTile(
+                      dense: true,
+                      title: Text(s),
+                      onLongPress: () => afficherMenuMot(context, s),
+                      onTap: () {
+                        _recherche.text = s;
+                        _chercher(s);
+                      },
+                    ),
+                ],
+              ),
+            )
+          else ...[
           SizedBox(
             height: 56,
             child: ListView(
@@ -94,6 +198,32 @@ class _IndexScreenState extends State<IndexScreen> {
                       label: Text(l.toUpperCase()),
                       selected: l == _lettre,
                       onSelected: (_) => _recommencer(l),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 48,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: ChoiceChip(
+                    label: Text('${_lettre.toUpperCase()}…'),
+                    selected: _debut == _lettre,
+                    onSelected: (_) => _recommencer(_lettre),
+                  ),
+                ),
+                for (final l in _lettres.split(''))
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 3),
+                    child: ChoiceChip(
+                      label: Text('$_lettre$l'),
+                      selected: _debut == '$_lettre$l',
+                      onSelected: (_) => _recommencer(_lettre, debut: '$_lettre$l'),
                     ),
                   ),
               ],
@@ -117,15 +247,17 @@ class _IndexScreenState extends State<IndexScreen> {
                       return ListTile(
                         dense: true,
                         title: Text(e.mot, style: theme.textTheme.bodyLarge),
-                        onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                          builder: (_) => ResultScreen(requete: e.mot),
-                        )),
+                        onLongPress: () => afficherMenuMot(context, e.mot),
+                        onTap: () => _afficher(e.mot),
                       );
                     },
                   ),
           ),
+          ],
         ],
-      ),
+      );
+      return _large ? DeuxVolets(liste: liste, detail: _detail()) : liste;
+    }),
     );
   }
 }

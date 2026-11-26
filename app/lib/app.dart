@@ -8,12 +8,12 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'data/db_installer.dart';
 import 'data/executeur_sqflite.dart';
 import 'data/user_store.dart';
-import 'screens/home_screen.dart';
+import 'screens/shell.dart';
 import 'screens/install_screen.dart';
 import 'theme.dart';
 
 /// Version affichée dans « À propos » (à garder alignée sur pubspec.yaml).
-const String appVersion = '0.2.0';
+const String appVersion = '0.8.2';
 
 /// Services partagés par tous les écrans.
 class AppServices {
@@ -22,6 +22,15 @@ class AppServices {
   final Moteur moteur;
   final SourceSql source;
   final UserStore user;
+
+  /// Premier mot (le plus courant) dont l'écriture correspond à [texte].
+  Future<Mot?> motParTexte(String texte) async {
+    final trouves = await source.motsParRecherche(plier(texte));
+    for (final m in trouves) {
+      if (m.nature != 'name') return m;
+    }
+    return trouves.isEmpty ? null : trouves.first;
+  }
 
   /// Retrouve un mot à partir de sa clé « mot<TAB>nature ».
   Future<Mot?> resoudre(String cle) async {
@@ -136,7 +145,7 @@ class _DictionnaireAppState extends State<DictionnaireApp> {
               onRetry: _demarrer,
               mots: _mots,
             )
-          : const HomeScreen(),
+          : const Shell(),
     );
   }
 

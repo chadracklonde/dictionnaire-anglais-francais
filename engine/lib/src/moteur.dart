@@ -2,9 +2,12 @@
 /// régulières, suggestions. Ne connaît la base qu'à travers [Source].
 library;
 
+import 'dart:math' as math;
+
 import 'conjugaison.dart';
 import 'modeles.dart';
 import 'normalisation.dart';
+import 'orthographe.dart';
 import 'regles.dart';
 import 'source.dart';
 
@@ -64,6 +67,16 @@ class Moteur {
       source.formes(mot.id),
       source.audio(mot.id),
       source.prononciations(mot.id),
+      // Les mots liés sont facultatifs : une base plus ancienne, sans ces tables, ne doit pas
+      // empêcher d'afficher la fiche.
+      _tolerant<List<Relation>>(source.relations(mot.id), const []),
+      mot.nature == 'verb'
+          ? _tolerant<List<String>>(source.verbesAParticule(mot.mot, 12), const [])
+          : Future<List<String>>.value(const []),
+      _tolerant<List<FauxAmi>>(
+        source.fauxAmi(mot.mot.toLowerCase()).then((v) => <FauxAmi>[if (v != null) v]),
+        const [],
+      ),
     ]);
     return Fiche(
       mot: mot,
@@ -75,8 +88,14 @@ class Moteur {
       prononciations: r[5] as List<Prononciation>,
       formeDemandee: formeDemandee,
       etiquetteRenvoi: etiquetteRenvoi,
+      relations: r[6] as List<Relation>,
+      particules: r[7] as List<String>,
+      fauxAmi: (r[8] as List<FauxAmi>).isEmpty ? null : (r[8] as List<FauxAmi>).first,
     );
   }
+
+  static Future<T> _tolerant<T>(Future<T> avenir, T parDefaut) =>
+      avenir.catchError((Object _) => parDefaut);
 
   /// Conjugaison anglaise d'un verbe : formes de la base d'abord, règles pour le reste.
   Future<Conjugaison> conjuguerMot(Mot mot, {Polarite polarite = Polarite.affirmative}) async {
@@ -98,14 +117,101 @@ class Moteur {
     return sortie;
   }
 
-  /// Quand rien n'est trouvé : mots qui commencent comme la requête, en la raccourcissant.
+  /// Quand rien n'est trouvé : d'abord les mots d'écriture proche (faute de frappe), puis les mots
+  /// qui commencent comme la requête, en la raccourcissant.
   Future<List<String>> suggestionsApprochees(String requete, {int limite = 8}) async {
+    final corriges = await corrections(requete, limite: limite);
+    if (corriges.isNotEmpty) return corriges;
     final p = plier(requete);
     for (var n = p.length - 1; n >= 2 && n >= p.length - 4; n--) {
       final trouves = await suggerer(p.substring(0, n), limite: limite);
       if (trouves.isNotEmpty) return trouves;
     }
     return const [];
+  }
+
+  /// Nombre de candidats lus par langue pour corriger une faute de frappe.
+  static const int maxCandidatsOrthographe = 20000;
+
+  /// Mots anglais et français d'écriture proche de [requete] (une ou deux fautes selon la longueur :
+  /// lettre en trop, manquante, fausse, ou deux lettres inversées). La première lettre doit être juste.
+  Future<List<String>> corrections(String requete, {int limite = 8}) async {
+    final p = plier(requete);
+    if (p.length < 3 || p.contains(' ')) return const [];
+    final tolerance = toleranceFautes(p.length);
+    final initiale = p.substring(0, 1);
+    final lmin = math.max(1, p.length - tolerance);
+    final lmax = p.length + tolerance;
+    final listes = await Future.wait([
+      _tolerant<List<MotProche>>(
+        source.motsProches(initiale, lmin, lmax, francais: false, limite: maxCandidatsOrthographe),
+        const [],
+      ),
+      _tolerant<List<MotProche>>(
+        source.motsProches(initiale, lmin, lmax, francais: true, limite: maxCandidatsOrthographe),
+        const [],
+      ),
+    ]);
+    final retenus = <String, (int, int?, String)>{};
+    for (final liste in listes) {
+      for (final c in liste) {
+        if (c.recherche == p || c.recherche.contains(' ')) continue;
+        final d = distanceEdition(p, c.recherche);
+        if (d == 0 || d > tolerance) continue;
+        final connu = retenus[c.recherche];
+        if (connu == null || (connu.$2 == null && c.rang != null)) {
+          retenus[c.recherche] = (d, c.rang, c.mot);
+        }
+      }
+    }
+    final classes = retenus.values.toList()
+      ..sort((x, y) {
+        if (x.$1 != y.$1) return x.$1 - y.$1;
+        if (x.$2 == null && y.$2 != null) return 1;
+        if (x.$2 != null && y.$2 == null) return -1;
+        if (x.$2 != null && y.$2 != null && x.$2 != y.$2) return x.$2! - y.$2!;
+        return x.$3.compareTo(y.$3);
+      });
+    return [for (final c in classes.take(limite)) c.$3];
+  }
+
+  /// Vrai si [texte] est un motif (« * » remplace des lettres, « ? » une seule lettre).
+  static bool estMotif(String texte) => texte.contains('*') || texte.contains('?');
+
+  /// Mots anglais qui correspondent à un motif : inter*, *tion, c?t, un*able.
+  Future<List<String>> chercherMotif(String texte, {int limite = 100}) async {
+    final p = plier(texte).replaceAll('[', '?').replaceAll(']', '?');
+    final premier = p.indexOf(RegExp(r'[*?]'));
+    if (premier < 0) return const [];
+    // Un motif fait seulement de jokers lirait toute la base : on le refuse.
+    if (p.replaceAll('*', '').replaceAll('?', '').isEmpty) return const [];
+    return source.motsParMotif(p.substring(0, premier), p, limite);
+  }
+
+  /// Mots dont une définition (anglaise ou française) contient tous les mots de [texte].
+  Future<List<ParDefinition>> chercherParDefinition(String texte, {int limite = 40}) async {
+    final mots = texte
+        .toLowerCase()
+        .replaceAll(RegExp(r"[^\p{L}\p{N}'-]", unicode: true), ' ')
+        .split(' ')
+        .where((m) => m.length >= 3)
+        .toSet()
+        .toList()
+      ..sort((a, b) => b.length - a.length);
+    if (mots.isEmpty) return const [];
+    final termes = mots.take(3).toList();
+    final listes = await Future.wait([
+      source.parDefinition(termes, francais: true, limite: limite),
+      source.parDefinition(termes, francais: false, limite: limite),
+    ]);
+    final vus = <int>{};
+    final sortie = <ParDefinition>[];
+    for (final liste in listes) {
+      for (final r in liste) {
+        if (sortie.length < limite && vus.add(r.mot.id)) sortie.add(r);
+      }
+    }
+    return sortie;
   }
 
   // ------------------------------------------------------------------ anglais → français

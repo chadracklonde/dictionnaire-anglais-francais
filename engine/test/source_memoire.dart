@@ -78,6 +78,75 @@ class SourceMemoire implements Source {
   @override
   Future<List<Prononciation>> prononciations(int motId) async => const [];
 
+  final Map<int, List<Relation>> relationsParMot = const {
+    3: [Relation('syn', 'hound'), Relation('ant', 'cat'), Relation('der', 'doggy')],
+  };
+
+  final Map<String, List<String>> particulesParVerbe = const {
+    'go': ['go on', 'go out'],
+  };
+
+  @override
+  Future<List<MotProche>> motsProches(String initiale, int lmin, int lmax,
+      {required bool francais, required int limite}) async {
+    final candidats = francais
+        ? inverses.keys.map((k) => MotProche(k, k, null))
+        : mots.map((m) => MotProche(m.mot, plier(m.mot), m.rang));
+    return candidats
+        .where((c) =>
+            c.recherche.startsWith(initiale) &&
+            c.recherche.length >= lmin &&
+            c.recherche.length <= lmax)
+        .take(limite)
+        .toList();
+  }
+
+  @override
+  Future<List<String>> motsParMotif(String debut, String glob, int limite) async {
+    final regex = RegExp(
+        '^${glob.split('').map((c) => c == '*' ? '.*' : c == '?' ? '.' : RegExp.escape(c)).join()}\$');
+    return mots
+        .map((m) => m.mot)
+        .toSet()
+        .where((m) => regex.hasMatch(plier(m)))
+        .take(limite)
+        .toList();
+  }
+
+  @override
+  Future<List<ParDefinition>> parDefinition(List<String> termes,
+          {required bool francais, required int limite}) async =>
+      francais || !termes.contains('canine')
+          ? const []
+          : const [ParDefinition(motDog, 'A domesticated canine.')];
+
+  @override
+  Future<List<String>> equivalentsHasard(int nombre) async =>
+      ['maison', 'table', 'rouge', 'voiture'].take(nombre).toList();
+
+  @override
+  Future<List<String>> motsHasard(int nombre) async =>
+      ['house', 'water', 'green', 'table'].take(nombre).toList();
+
+  @override
+  Future<List<FauxAmi>> fauxAmisHasard(int nombre) async => const [
+        FauxAmi(mot: 'actually', piege: 'actuellement', vrai: 'en fait, vraiment'),
+        FauxAmi(mot: 'library', piege: 'librairie', vrai: 'bibliothèque'),
+        FauxAmi(mot: 'journey', piege: 'journée', vrai: 'voyage, trajet'),
+      ].take(nombre).toList();
+
+  @override
+  Future<List<Relation>> relations(int motId) async => relationsParMot[motId] ?? const [];
+
+  @override
+  Future<List<String>> verbesAParticule(String base, int limite) async =>
+      (particulesParVerbe[base] ?? const <String>[]).take(limite).toList();
+
+  @override
+  Future<FauxAmi?> fauxAmi(String mot) async => mot == 'actually'
+      ? const FauxAmi(mot: 'actually', piege: 'actuellement', vrai: 'en fait, vraiment')
+      : null;
+
   @override
   Future<List<LigneInverse>> anglaisParFrancais(String recherche, int limite) async =>
       inverses[recherche] ?? const [];

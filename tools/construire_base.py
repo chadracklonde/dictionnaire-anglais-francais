@@ -41,11 +41,13 @@ except ImportError:  # pragma: no cover
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCHEMA = os.path.join(HERE, "schema.sql")
 CONTRACTIONS = os.path.join(HERE, "data", "contractions.tsv")
+FAUX_AMIS = os.path.join(HERE, "data", "faux_amis.tsv")
 VERSION_SCHEMA = "1"
 
 MAX_SENS = 8          # définitions anglaises gardées par mot
 MAX_DEF_FR = 6        # définitions françaises gardées par mot
 MAX_FORMES = 20       # formes fléchies gardées par mot
+MAX_RELATIONS = {"syn": 10, "ant": 8, "der": 8}  # mots liés gardés par mot et par type
 MAX_AUDIO = 12        # enregistrements gardés par entrée
 MAX_API = 8           # transcriptions gardées par entrée
 SEUIL_RANG_DEFAUT = 30000
@@ -260,6 +262,28 @@ def ajouter_formes(cur, mot_id, word, entry):
             break
 
 
+def ajouter_relations(cur, mot_id, word, entry):
+    """Synonymes, contraires et dérivés, en tête d'entrée comme dans les sens. Renvoie leur nombre."""
+    total = 0
+    base = norm(word)
+    sources = [entry] + [s for s in entry.get("senses") or [] if isinstance(s, dict)]
+    for type_, cle in (("syn", "synonyms"), ("ant", "antonyms"), ("der", "derived")):
+        n = 0
+        for src in sources:
+            for item in src.get(cle) or []:
+                texte = item.get("word") if isinstance(item, dict) else item
+                if not texte or n >= MAX_RELATIONS[type_]:
+                    continue
+                texte = clip(texte, 60)
+                if not texte or "http" in texte or norm(texte) == base:
+                    continue
+                cur.execute("INSERT OR IGNORE INTO relations(mot_id, type, mot) VALUES (?, ?, ?)",
+                            (mot_id, type_, texte))
+                n += cur.rowcount
+        total += n
+    return total
+
+
 def ajouter_sons(cur, mot_id, entry):
     n_audio = n_api = 0
     for s in entry.get("sounds") or []:
@@ -317,6 +341,7 @@ def _entree_anglaise(cur, e, edition, c):
             if ajouter_traduction(cur, mot_id, t["word"], t.get("sense") or "", "en", _genre(t)):
                 c["traductions_en"] += 1
         ajouter_formes(cur, mot_id, word, e)
+        c["relations"] += ajouter_relations(cur, mot_id, word, e)
     else:
         ajouter_definitions_fr(cur, mot_id, senses)
     ajouter_sons(cur, mot_id, e)
@@ -399,6 +424,23 @@ def charger_contractions(conn, path):
     return n
 
 
+def charger_faux_amis(conn, path):
+    """Table écrite à la main : mot anglais <TAB> piège <TAB> vrai sens. Renvoie le nombre de lignes."""
+    n = 0
+    with open(path, encoding="utf-8") as f:
+        for number, line in enumerate(f, 1):
+            line = line.rstrip("\n")
+            if not line.strip() or line.lstrip().startswith("#"):
+                continue
+            cols = [col.strip() for col in line.split("\t")]
+            if len(cols) < 3 or not all(cols[:3]):
+                raise ValueError("%s ligne %d : trois colonnes attendues" % (path, number))
+            conn.execute("INSERT OR REPLACE INTO faux_amis(mot, piege, vrai) VALUES (?, ?, ?)",
+                         (norm(cols[0]), cols[1], cols[2]))
+            n += 1
+    return n
+
+
 def deriver_renvois(conn):
     """Complète les renvois « forme -> mot de base » que l'import n'a pas vus.
 
@@ -442,11 +484,13 @@ def deriver_renvois(conn):
     return apres_formes - avant, apres - apres_formes
 
 
-def finaliser(conn, frequence=None, contractions=CONTRACTIONS, seuil_rang=SEUIL_RANG_DEFAUT):
+def finaliser(conn, frequence=None, contractions=CONTRACTIONS, seuil_rang=SEUIL_RANG_DEFAUT,
+              faux_amis=FAUX_AMIS):
     """Contractions, rangs, élagage, index. Renvoie un dictionnaire de chiffres."""
     res = {}
     cur = conn.cursor()
     res["contractions"] = charger_contractions(conn, contractions) if contractions else 0
+    res["faux_amis"] = charger_faux_amis(conn, faux_amis) if faux_amis else 0
 
     if frequence:
         ranks = charger_frequence(frequence)
@@ -466,7 +510,7 @@ def finaliser(conn, frequence=None, contractions=CONTRACTIONS, seuil_rang=SEUIL_
         " WHERE NOT EXISTS (SELECT 1 FROM traductions t WHERE t.mot_id = m.id)"
         "   AND NOT EXISTS (SELECT 1 FROM definitions_fr d WHERE d.mot_id = m.id)"
         "   AND (m.rang IS NULL OR m.rang > ?))", (seuil_rang,))
-    for table in ("sens", "definitions_fr", "traductions", "formes", "audio", "prononciations"):
+    for table in ("sens", "definitions_fr", "traductions", "formes", "audio", "prononciations", "relations"):
         cur.execute("DELETE FROM %s WHERE mot_id NOT IN (SELECT id FROM mots)" % table)
     cur.execute("DELETE FROM renvois WHERE NOT EXISTS "
                 "(SELECT 1 FROM mots WHERE mots.mot_norm = renvois.lemme_norm)")
@@ -479,6 +523,7 @@ def finaliser(conn, frequence=None, contractions=CONTRACTIONS, seuil_rang=SEUIL_
     cur.execute("CREATE INDEX IF NOT EXISTS ix_traductions_fr_recherche ON traductions(fr_recherche)")
     cur.execute("CREATE INDEX IF NOT EXISTS ix_renvois_lemme ON renvois(lemme_norm)")
     cur.execute("CREATE INDEX IF NOT EXISTS ix_mots_rang ON mots(rang)")
+    cur.execute("CREATE INDEX IF NOT EXISTS ix_relations_mot ON relations(mot_id)")
 
     meta = {
         "version_schema": VERSION_SCHEMA,
@@ -564,6 +609,8 @@ def rapport(conn, frequence=None):
     r["mots_avec_audio_uk"] = _un(cur, "SELECT COUNT(DISTINCT mot_id) FROM audio WHERE accent = 'uk'")
     r["mots_avec_api"] = _un(cur, "SELECT COUNT(DISTINCT mot_id) FROM prononciations")
     r["contractions"] = _un(cur, "SELECT COUNT(*) FROM contractions")
+    r["relations"] = _un(cur, "SELECT COUNT(*) FROM relations")
+    r["faux_amis"] = _un(cur, "SELECT COUNT(*) FROM faux_amis")
 
     anomalies = {
         "nature_inconnue": _un(cur, "SELECT COUNT(*) FROM mots WHERE nature = '?'"),
@@ -626,6 +673,8 @@ def rapport_markdown(r, taille=None):
             r["mots_avec_audio"], r["mots_avec_audio_us"], r["mots_avec_audio_uk"]),
         "| Mots avec transcription phonétique | %d |" % r["mots_avec_api"],
         "| Contractions écrites à la main | %d |" % r["contractions"],
+        "| Mots liés (synonymes, contraires, famille) | %d |" % r["relations"],
+        "| Faux amis écrits à la main | %d |" % r["faux_amis"],
         "", "Natures : " + ", ".join("%s %d" % kv for kv in r["natures"].items()), "",
     ]
     if "couverture" in r:

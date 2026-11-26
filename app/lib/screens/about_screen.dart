@@ -35,7 +35,7 @@ class _AboutScreenState extends State<AboutScreen> {
         children: [
           Text('Anglais Français', style: theme.textTheme.headlineSmall),
           const SizedBox(height: 4),
-          const Text('Version $appVersion · par Chadrack Londe, Kindu (RDC)'),
+          const Text('Version $appVersion'),
           const SizedBox(height: 16),
           FutureBuilder<Map<String, int>>(
             future: _chiffres,
@@ -55,6 +55,26 @@ class _AboutScreenState extends State<AboutScreen> {
             'envoyée. Vos favoris et votre historique restent sur cet appareil.',
           ),
           const SizedBox(height: 20),
+          Text('Concepteur', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 8),
+          const Text(
+            'Conçue et développée par Chadrack Londe, à Kindu (République démocratique du '
+            'Congo). Une question, une erreur dans un mot, une idée ? Le projet est ouvert : '
+            'vous pouvez m\'écrire (chadracktambwe+dev@gmail.com) ou le signaler sur la page du code source.',
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.mail_outline_rounded),
+            label: const Text('Écrire au concepteur'),
+            onPressed: () => _ouvrir('mailto:chadracktambwe+dev@gmail.com?subject=Anglais%20Fran%C3%A7ais'),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.code_rounded),
+            label: const Text('Code source (GitHub)'),
+            onPressed: () => _ouvrir('https://github.com/chadracklonde/dictionnaire-anglais-francais'),
+          ),
+          const SizedBox(height: 20),
           Text('Sources et licences', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
           const Text(
@@ -67,6 +87,12 @@ class _AboutScreenState extends State<AboutScreen> {
           const SizedBox(height: 8),
           const Text(
             'Extraction : projet wiktextract / kaikki.org. Fréquences des mots : wordfreq.',
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Les voix enregistrées viennent de contributeurs du Wiktionnaire (Wikimedia '
+            'Commons), sous licence CC BY, CC BY-SA ou domaine public. L\'auteur et la licence '
+            'de chaque enregistrement s\'affichent sous la fiche du mot, après l\'écoute.',
           ),
           const SizedBox(height: 12),
           Wrap(
@@ -87,6 +113,13 @@ class _AboutScreenState extends State<AboutScreen> {
             ],
           ),
           const SizedBox(height: 16),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.privacy_tip_outlined),
+            label: const Text('Politique de confidentialité'),
+            onPressed: () => _ouvrir(
+                'https://github.com/chadracklonde/dictionnaire-anglais-francais/blob/main/CONFIDENTIALITE.md'),
+          ),
+          const SizedBox(height: 8),
           OutlinedButton.icon(
             icon: const Icon(Icons.description_outlined),
             label: const Text('Licences des bibliothèques'),
