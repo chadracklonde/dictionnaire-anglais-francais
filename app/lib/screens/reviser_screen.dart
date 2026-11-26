@@ -5,6 +5,7 @@ import '../app.dart';
 import '../data/user_store.dart';
 import '../widgets/mise_en_page.dart';
 import 'dictee_screen.dart';
+import 'ecoute_screen.dart';
 import 'quiz_screen.dart';
 import 'revision_session_screen.dart';
 import 'statistiques_screen.dart';
@@ -182,6 +183,19 @@ class _ReviserScreenState extends State<ReviserScreen> {
                   onPressed: dues.isEmpty
                       ? null
                       : () => _ouvrir(RevisionSessionScreen(cles: dues)),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.headphones_rounded),
+                  label: const Text('Écouter cette liste'),
+                  onPressed: () => _ouvrir(EcouteScreen(
+                    titre: _portee == _tout
+                        ? 'tous mes mots'
+                        : _portee == _favoris
+                            ? 'favoris'
+                            : _portee,
+                    cles: cles,
+                  )),
                 ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(

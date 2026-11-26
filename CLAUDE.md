@@ -321,3 +321,12 @@ Demande de Chadrack : expressions anglaises avec leur traduction française, **b
   voix du téléphone, comparaison sans accents ni ponctuation).
 - Reste du plan : lot 12 (rappel quotidien avec permission de notification, lecture audio d'une liste, notes sur les expressions).
   **Chadrack a demandé qu'on le lui rappelle après le lot 11.**
+
+## 21. Lot 12 (partiel) — écoute (26 novembre 2026)
+
+- `ecoute_screen.dart` : « Écouter cette liste » (onglet Réviser) lit en boucle le mot en anglais puis son équivalent français
+  (`Speech.dire`, voix du téléphone en-US/en-GB et fr-FR), écran éteint possible.
+- Notes sur les expressions : déjà possibles (la fiche d'une expression porte « Ajouter une note »).
+- **Rappel quotidien (notification) non fait** : il demande `flutter_local_notifications`, le désucrage Java dans `app/build.gradle`,
+  la permission `POST_NOTIFICATIONS`, des récepteurs dans le manifeste et la fiche Play Store à revoir ; trop risqué sans compilation locale.
+  À faire dans un lot à part, avec un patch Gradle comme `tools/android_audio.py`, après l'essai du lot 11 sur téléphone.
