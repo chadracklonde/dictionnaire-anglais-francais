@@ -125,20 +125,23 @@ class _QuizScreenState extends State<QuizScreen> {
     final questions = <_Question>[];
     for (final mot in candidats) {
       if (questions.length >= _nombre) break;
-      if (mot.length < 3) continue;
+      if (mot.length < 4) continue;
       final trouves = await services.source.motsParRecherche(plier(mot));
       if (trouves.isEmpty) continue;
+      // Pas de petits mots-outils (the, that, he…) : ni en réponse, ni au rang des plus courants.
+      final rang = trouves.first.rang;
+      if (rang == null || rang < 300) continue;
       final fiche = await services.moteur.fiche(trouves.first);
       final motif = RegExp('\\b${RegExp.escape(mot)}\\b', caseSensitive: false);
       String? phrase;
       for (final s in fiche.sens) {
-        if (s.exemple.length <= 90 && motif.hasMatch(s.exemple)) {
+        if (s.exemple.length <= 90 && !s.exemple.contains('(') && motif.hasMatch(s.exemple)) {
           phrase = s.exemple;
           break;
         }
       }
       if (phrase == null) continue;
-      final autres = [for (final c in candidats) if (c.toLowerCase() != mot.toLowerCase()) c]..shuffle();
+      final autres = [for (final c in candidats) if (c.length >= 4 && c.toLowerCase() != mot.toLowerCase()) c]..shuffle();
       final options = <String>[mot.toLowerCase(), ...autres.take(3).map((c) => c.toLowerCase())];
       final equivalent = fiche.equivalents.isEmpty ? '' : fiche.equivalents.first.fr;
       questions.add(_Question(

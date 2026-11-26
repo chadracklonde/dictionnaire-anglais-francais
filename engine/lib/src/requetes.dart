@@ -168,7 +168,9 @@ WHERE (? = '' OR e.type = ?)
   AND (? = 1 OR e.registre != 'vulgaire')
   AND (? = '' OR m.mot_recherche LIKE ?
        OR EXISTS (SELECT 1 FROM traductions t2 WHERE t2.mot_id = m.id AND t2.fr_recherche LIKE ?))
-ORDER BY e.curee DESC, m.rang IS NULL, m.rang, m.mot_recherche
+ORDER BY e.curee DESC,
+         CASE e.type WHEN 'idiome' THEN 0 WHEN 'proverbe' THEN 1 WHEN 'utile' THEN 2 WHEN 'particule' THEN 3 ELSE 4 END,
+         m.rang IS NULL, m.rang, m.mot_recherche
 LIMIT ? OFFSET ?
 ''';
 

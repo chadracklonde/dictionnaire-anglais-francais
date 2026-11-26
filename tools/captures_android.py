@@ -123,6 +123,7 @@ def etape(nom, fonction):
 
 def chercher_mot(mot):
     """Depuis l'accueil : saisit le mot et lance la recherche."""
+    revenir_accueil()
     ancien = trouver(noeuds(), exact="Effacer")
     if ancien:
         toucher(ancien)
@@ -151,6 +152,15 @@ def attendre_defilant(essais=6, **criteres):
             return n
         defiler()
     raise RuntimeError("introuvable après défilement : %r" % (criteres,))
+
+
+def revenir_accueil():
+    """Remonte jusqu'à l'accueil (après une étape ratée on peut être resté sur un autre écran)."""
+    for _ in range(5):
+        liste = noeuds()
+        if trouver(liste, contient="Mot du jour") or trouver(liste, contient="Rechercher un mot"):
+            return
+        touche(4)
 
 
 def retour():
@@ -195,13 +205,15 @@ def main_court(apk, sortie):
     etape("fiche", fiche)
 
     def expressions():
+        revenir_accueil()
         toucher(attendre_defilant(exact="Expressions", clic=True))
-        attendre(30, contient="Chercher une expression")
+        attendre(30, classe="EditText")
         capturer("t03_expressions")
         retour()
     etape("expressions", expressions)
 
     def reviser():
+        revenir_accueil()
         toucher(attendre(30, exact="Réviser"))
         attendre(30, contient="Quels mots")
         capturer("t04_reviser")
@@ -290,9 +302,10 @@ def main(apk, sortie):
     etape("quiz", quiz)
 
     def expressions():
+        revenir_accueil()
         toucher(attendre(30, exact="Accueil"))
         toucher(attendre_defilant(exact="Expressions", clic=True))
-        attendre(30, contient="Chercher une expression")
+        attendre(30, classe="EditText")
         capturer("08_expressions")
         toucher(attendre(30, contient="Phrases utiles"))
         time.sleep(2)
@@ -319,6 +332,7 @@ def main(apk, sortie):
     etape("expression_mot", expression_mot)
 
     def trous():
+        revenir_accueil()
         toucher(attendre(30, exact="Réviser"))
         toucher(attendre_defilant(contient="Phrases à trous"))
         attendre(90, contient="Complétez")
@@ -327,9 +341,11 @@ def main(apk, sortie):
     etape("trous", trous)
 
     def reglages():
+        revenir_accueil()
         toucher(attendre(30, exact="Accueil"))
         toucher(attendre(30, contient="Réglages"))
         attendre_defilant(contient="Rappel quotidien")
+        defiler()
         capturer("13_reglages_rappel")
         retour()
     etape("reglages", reglages)

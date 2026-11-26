@@ -125,7 +125,7 @@ class Expressions(unittest.TestCase):
                                          "%" + motif + "%", "%" + motif + "%", limite, decalage)]
         tout = liste()
         # les soignées d'abord (ordre alphabétique entre elles quand aucune n'a de rang)
-        self.assertEqual(tout[:4], ["a rolling stone gathers no moss", "break a leg", "how much is it", "kick the bucket"])
+        self.assertEqual(tout[:4], ["break a leg", "kick the bucket", "a rolling stone gathers no moss", "how much is it"])
         self.assertNotIn("better late than never", tout[:4])
         self.assertIn("better late than never", tout)
         self.assertEqual(liste("proverbe"), ["a rolling stone gathers no moss", "better late than never"])
