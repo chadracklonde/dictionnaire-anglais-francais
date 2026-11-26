@@ -138,10 +138,17 @@ LIMIT ?
 
 /// Mots anglais courants tirés au hasard (mauvaises réponses du quiz inverse). Paramètre : nombre voulu.
 const String requeteMotsHasard = '''
-SELECT mot FROM mots
-WHERE id >= (ABS(RANDOM()) % (SELECT MAX(id) FROM mots)) + 1
-  AND rang IS NOT NULL AND rang <= 10000 AND nature != 'name' AND mot NOT LIKE '% %'
-  AND mot NOT GLOB '*[A-Z]*'
+WITH d AS (SELECT (ABS(RANDOM()) % (SELECT MAX(id) FROM mots)) + 1 AS r)
+SELECT mot FROM (
+  SELECT mot, 0 AS tour, id FROM mots, d
+  WHERE id >= d.r AND rang IS NOT NULL AND rang <= 10000 AND nature != 'name'
+    AND mot NOT LIKE '% %' AND mot NOT GLOB '*[A-Z]*'
+  UNION ALL
+  SELECT mot, 1 AS tour, id FROM mots, d
+  WHERE id < d.r AND rang IS NOT NULL AND rang <= 10000 AND nature != 'name'
+    AND mot NOT LIKE '% %' AND mot NOT GLOB '*[A-Z]*'
+)
+ORDER BY tour, id
 LIMIT ?
 ''';
 

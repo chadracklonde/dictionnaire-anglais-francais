@@ -89,9 +89,19 @@ class Moteur {
         const [],
       ),
     ]);
+    final infoExpression = (r[9] as List<InfoExpression>).isEmpty ? null : (r[9] as List<InfoExpression>).first;
+    var equivalents = r[0] as List<Equivalent>;
+    // L'équivalent recommandé d'une expression passe en premier.
+    if (infoExpression != null && infoExpression.fr.isNotEmpty) {
+      final voulu = infoExpression.fr.toLowerCase();
+      equivalents = [
+        ...equivalents.where((e) => e.fr.toLowerCase() == voulu),
+        ...equivalents.where((e) => e.fr.toLowerCase() != voulu),
+      ];
+    }
     return Fiche(
       mot: mot,
-      equivalents: r[0] as List<Equivalent>,
+      equivalents: equivalents,
       sens: r[1] as List<Sens>,
       definitionsFr: r[2] as List<String>,
       formes: r[3] as List<Forme>,
@@ -102,7 +112,7 @@ class Moteur {
       relations: r[6] as List<Relation>,
       particules: r[7] as List<String>,
       fauxAmi: (r[8] as List<FauxAmi>).isEmpty ? null : (r[8] as List<FauxAmi>).first,
-      expression: (r[9] as List<InfoExpression>).isEmpty ? null : (r[9] as List<InfoExpression>).first,
+      expression: infoExpression,
       expressionsAvec: mot.mot.contains(' ') ? const [] : r[10] as List<LigneExpression>,
     );
   }
