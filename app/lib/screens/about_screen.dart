@@ -60,7 +60,13 @@ class _AboutScreenState extends State<AboutScreen> {
           const Text(
             'Conçue et développée par Chadrack Londe, à Kindu (République démocratique du '
             'Congo). Une question, une erreur dans un mot, une idée ? Le projet est ouvert : '
-            'vous pouvez le signaler sur la page du code source.',
+            'vous pouvez m\'écrire (chadracktambwe+dev@gmail.com) ou le signaler sur la page du code source.',
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.mail_outline_rounded),
+            label: const Text('Écrire au concepteur'),
+            onPressed: () => _ouvrir('mailto:chadracktambwe+dev@gmail.com?subject=Anglais%20Fran%C3%A7ais'),
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(

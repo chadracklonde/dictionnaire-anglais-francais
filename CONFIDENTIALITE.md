@@ -51,5 +51,9 @@ Si une version future devait envoyer des données ou demander la permission Inte
 
 ## Contact
 
-Pour toute question : ouvrir une demande sur la page du projet,
+Éditeur : Chadrack Londe, Kindu (République démocratique du Congo).
+
+Pour toute question sur cette politique ou sur vos données : chadracktambwe+dev@gmail.com
+
+Vous pouvez aussi ouvrir une demande sur la page du projet :
 https://github.com/chadracklonde/dictionnaire-anglais-francais/issues

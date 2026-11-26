@@ -38,7 +38,7 @@ Conçue par Chadrack Londe, à Kindu (RDC).
 Livres et références (ou Éducation)
 
 ## Coordonnées à renseigner dans la Play Console
-- E-mail de contact : à fournir par Chadrack (obligatoire pour Google, affiché sur la fiche).
+- E-mail de contact (obligatoire pour Google, affiché sur la fiche) : chadracktambwe+dev@gmail.com
 - Site web (facultatif) : https://github.com/chadracklonde/dictionnaire-anglais-francais
 - URL de la politique de confidentialité :
   https://github.com/chadracklonde/dictionnaire-anglais-francais/blob/main/CONFIDENTIALITE.md
