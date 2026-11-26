@@ -2,7 +2,7 @@
 
 > Lu automatiquement par Claude Code à l'ouverture du dépôt. **Aucun mot de passe ici** : les secrets
 > sont décrits (où ils sont, comment ils s'appellent), jamais écrits.
-> Dernière mise à jour : 25 novembre 2026 · état : phases 0 à 4 faites, lots 1 à 6 et 8 compilés par la CI (§15), lot 7 (audio) en cours (§16), rien de publié. Travail sur la branche `claude/hopeful-shannon-ohokkd` (PR en brouillon).
+> Dernière mise à jour : 26 novembre 2026 · état : phases 0 à 4 faites, lots 1 à 9 et audio fusionnés dans `main` (PR n° 1), fiche Play Store en cours de remplissage par Chadrack ; lot 10 « Expressions » (§19) en cours sur la branche `claude/hopeful-shannon-ohokkd`.
 
 ## 1. En bref
 
@@ -294,3 +294,21 @@ Le premier téléchargement complet a duré 5 h puis perdu ses fichiers : `zip` 
 `audio-brut` conservé même en cas d'échec, mots de rang > 30 000 écartés (`--rang-max`), budget de 320 min.
 Constat du premier essai : 25 709 mots candidats, 3 734 fichiers pour le cœur (70 Mo), débit ≈ 0,8 fichier/s.
 Relancé le 25 novembre 2026 (22 h 45 UTC) ; à son terme : `build.yml` avec `audio = oui`.
+
+## 19. Lot 10 — Expressions (26 novembre 2026, version 0.9.0+11)
+
+Demande de Chadrack : expressions anglaises avec leur traduction française, **bien plus de 300**, enrichies depuis le Wiktionnaire.
+- **Données** : tables `expressions` (type, registre, sens littéral, équivalent recommandé, thème, exemple, `curee`) et `expression_mots`
+  (index inversé pour « Expressions avec … »). Listes écrites à la main dans `tools/data/expressions_*.tsv`
+  (idiomes, phrases utiles par situation, proverbes, verbes à particule ; plus de 500 lignes ; format en tête de chaque fichier ;
+  `test_expressions.py` vérifie les vrais fichiers). Classement automatique du reste du Wiktionnaire dans `construire_base.py`
+  (`classer_expressions`) d'après la nature (phrase, proverbe…) et les catégories du Wiktionnaire anglais téléchargées par la CI
+  (`tools/categories_wiktionnaire.py`, étape non fatale de `data.yml`). Le vulgaire est classé `vulgaire`.
+- **Moteur** : `InfoExpression`, `LigneExpression`, méthodes `Source` (`infoExpression`, `expressions`, `expressionsAvec`,
+  `expressionCuree`…), `Moteur.afficherVulgaire` (faux par défaut), `Moteur.expressions`, `Moteur.expressionDuJour`.
+- **Application** : écran Expressions (recherche EN/FR, filtres type et thème), puce sur l'accueil, « Expression du jour »,
+  bloc d'expression et « Expressions avec … » sur la fiche, quiz des expressions, réglage « Afficher les expressions vulgaires ».
+- **Corrections** : mauvaises réponses de quiz limitées aux mots courants sans majuscule, exemples courts d'abord, formes sans doublon
+  ni formes vieillies sur la fiche.
+- À faire : relancer `data.yml` (publier = oui) puis `build.yml` (audio = oui) ; vérifier dans les annotations le nombre d'expressions
+  (rapport de la base) ; refaire les captures du Play Store.

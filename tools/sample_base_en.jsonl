@@ -17,3 +17,9 @@
 {"word": "could", "lang_code": "en", "pos": "verb", "senses": [{"glosses": ["conditional of can", "Used as a past subjunctive."]}]}
 {pas du json
 {"word": "go on", "lang_code": "en", "pos": "verb", "senses": [{"glosses": ["To continue."]}], "translations": [{"lang_code": "fr", "word": "continuer"}]}
+{"word": "kick the bucket", "lang_code": "en", "pos": "verb", "senses": [{"glosses": ["To die."]}], "translations": [{"lang_code": "fr", "word": "casser sa pipe"}, {"lang_code": "fr", "word": "mourir"}]}
+{"word": "piece of cake", "lang_code": "en", "pos": "noun", "senses": [{"glosses": ["Something easy."]}], "translations": [{"lang_code": "fr", "word": "jeu d'enfant"}]}
+{"word": "better late than never", "lang_code": "en", "pos": "proverb", "senses": [{"glosses": ["It is better to arrive late than not at all."]}], "translations": [{"lang_code": "fr", "word": "mieux vaut tard que jamais"}]}
+{"word": "by the way", "lang_code": "en", "pos": "prep_phrase", "senses": [{"glosses": ["Incidentally."]}], "translations": [{"lang_code": "fr", "word": "au fait"}, {"lang_code": "fr", "word": "d'ailleurs"}]}
+{"word": "ice cream", "lang_code": "en", "pos": "noun", "senses": [{"glosses": ["A frozen dessert."]}], "translations": [{"lang_code": "fr", "word": "glace"}]}
+{"word": "give up", "lang_code": "en", "pos": "verb", "senses": [{"glosses": ["To stop trying."]}], "translations": [{"lang_code": "fr", "word": "abandonner"}]}

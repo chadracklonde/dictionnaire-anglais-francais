@@ -23,6 +23,27 @@ void main() {
     expect(piege.fauxAmi?.piege, 'actuellement');
   });
 
+  test('expressions : fiche, liste, masquage du vulgaire et expression du jour', () async {
+    final m = Moteur(SourceMemoire());
+    final fiche = await m.fiche(const Mot(id: 900, mot: 'break a leg', nature: 'phrase'));
+    expect(fiche.expression?.litteral, 'casse une jambe');
+    expect(fiche.expression?.curee, isTrue);
+    expect(fiche.expressionsAvec, isEmpty); // une expression ne liste pas d'autres expressions
+
+    final mot = await m.fiche(const Mot(id: 1, mot: 'leg', nature: 'noun'));
+    expect(mot.expression, isNull);
+    expect([for (final e in mot.expressionsAvec) e.mot.mot], ['break a leg']);
+
+    expect([for (final e in await m.expressions()) e.mot.mot], ['break a leg']);
+    m.afficherVulgaire = true;
+    expect((await m.expressions()).length, 2);
+    expect(await m.expressions(recherche: 'holy'), hasLength(1));
+    expect((await m.expressions(type: 'proverbe')), isEmpty);
+
+    final jour = await m.expressionDuJour(12345);
+    expect(jour?.mot.mot, 'break a leg');
+  });
+
   test('corrections après une faute de frappe', () async {
     expect(await moteur.corrections('wrld'), contains('world'));
     expect(await moteur.corrections('helo'), contains('hello'));

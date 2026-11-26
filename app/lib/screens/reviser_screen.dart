@@ -182,6 +182,12 @@ class _ReviserScreenState extends State<ReviserScreen> {
               ),
               const SizedBox(height: 8),
               OutlinedButton.icon(
+                icon: const Icon(Icons.format_quote_rounded),
+                label: const Text('Quiz des expressions'),
+                onPressed: () => _ouvrir(const QuizScreen(mode: ModeQuiz.expressions)),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
                 icon: const Icon(Icons.list_alt_rounded),
                 label: const Text('Listes de vocabulaire (voyage, cuisine…)'),
                 onPressed: () => _ouvrir(const ThemesScreen()),

@@ -135,6 +135,49 @@ class SourceMemoire implements Source {
         FauxAmi(mot: 'journey', piege: 'journée', vrai: 'voyage, trajet'),
       ].take(nombre).toList();
 
+  static const _expr = LigneExpression(
+      mot: Mot(id: 900, mot: 'break a leg', nature: 'phrase'),
+      type: 'idiome',
+      litteral: 'casse une jambe',
+      curee: true,
+      fr: 'bonne chance');
+  static const _exprVulgaire = LigneExpression(
+      mot: Mot(id: 901, mot: 'holy crap', nature: 'phrase'), type: 'idiome', registre: 'vulgaire', fr: 'zut');
+
+  @override
+  Future<InfoExpression?> infoExpression(int motId) async => motId == 900
+      ? const InfoExpression(
+          type: 'idiome', litteral: 'casse une jambe', fr: 'bonne chance', exemple: 'Break a leg!', curee: true)
+      : null;
+
+  @override
+  Future<List<LigneExpression>> expressions(
+          {String type = '', String theme = '', bool vulgaire = false, String recherche = '',
+          required int limite, int decalage = 0}) async =>
+      [_expr, if (vulgaire) _exprVulgaire]
+          .where((e) => (type.isEmpty || e.type == type) &&
+              (recherche.isEmpty || e.mot.mot.contains(recherche.toLowerCase())))
+          .skip(decalage)
+          .take(limite)
+          .toList();
+
+  @override
+  Future<List<LigneExpression>> expressionsAvec(String motPlie,
+          {bool vulgaire = false, required int limite}) async =>
+      [_expr, if (vulgaire) _exprVulgaire]
+          .where((e) => e.mot.mot.split(' ').contains(motPlie))
+          .take(limite)
+          .toList();
+
+  @override
+  Future<int> nombreExpressionsCurees() async => 1;
+
+  @override
+  Future<LigneExpression?> expressionCuree(int decalage) async => decalage == 0 ? _expr : null;
+
+  @override
+  Future<List<LigneExpression>> expressionsCureesHasard(int nombre) async => [_expr].take(nombre).toList();
+
   @override
   Future<List<Relation>> relations(int motId) async => relationsParMot[motId] ?? const [];
 

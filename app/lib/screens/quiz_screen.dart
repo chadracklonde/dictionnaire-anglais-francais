@@ -5,7 +5,7 @@ import '../app.dart';
 import '../widgets/mise_en_page.dart';
 
 /// Sorte de quiz : le mot anglais à traduire, le mot français à retrouver en anglais, ou les faux amis.
-enum ModeQuiz { anglaisFrancais, francaisAnglais, fauxAmis }
+enum ModeQuiz { anglaisFrancais, francaisAnglais, fauxAmis, expressions }
 
 class _Question {
   const _Question(this.cle, this.intitule, this.bonne, this.options, [this.explication = '']);
@@ -45,9 +45,11 @@ class _QuizScreenState extends State<QuizScreen> {
 
   Future<void> _preparer() async {
     final services = AppScope.of(context);
-    final questions = widget.mode == ModeQuiz.fauxAmis
-        ? await _questionsFauxAmis(services)
-        : await _questionsMots(services);
+    final questions = switch (widget.mode) {
+      ModeQuiz.fauxAmis => await _questionsFauxAmis(services),
+      ModeQuiz.expressions => await _questionsExpressions(services),
+      _ => await _questionsMots(services),
+    };
     if (!mounted) return;
     setState(() => _questions = questions);
   }
@@ -76,6 +78,35 @@ class _QuizScreenState extends State<QuizScreen> {
         f.vrai,
         options.toList()..shuffle(),
         'Piège : « ${f.mot} » ne veut pas dire « ${f.piege} ».',
+      ));
+    }
+    return questions;
+  }
+
+  Future<List<_Question>> _questionsExpressions(AppServices services) async {
+    List<LigneExpression> expressions;
+    try {
+      expressions = await services.source.expressionsCureesHasard(_nombre + 6);
+    } catch (_) {
+      expressions = const [];
+    }
+    expressions = [for (final e in expressions) if (e.fr.isNotEmpty) e];
+    if (expressions.length < 4) return const [];
+    final questions = <_Question>[];
+    for (var i = 0; i < expressions.length && questions.length < _nombre; i++) {
+      final e = expressions[i];
+      final bonne = e.fr;
+      final options = <String>{bonne};
+      for (var k = 1; k < expressions.length && options.length < 4; k++) {
+        options.add(expressions[(i + k) % expressions.length].fr);
+      }
+      if (options.length < 3) continue;
+      questions.add(_Question(
+        null,
+        'Que veut dire « ${e.mot.mot} » ?',
+        bonne,
+        options.toList()..shuffle(),
+        e.litteral.isEmpty ? '' : 'Mot à mot : ${e.litteral}.',
       ));
     }
     return questions;
@@ -149,6 +180,7 @@ class _QuizScreenState extends State<QuizScreen> {
           ModeQuiz.anglaisFrancais => 'Quiz',
           ModeQuiz.francaisAnglais => 'Quiz français → anglais',
           ModeQuiz.fauxAmis => 'Quiz des faux amis',
+          ModeQuiz.expressions => 'Quiz des expressions',
         }),
       ),
       body: questions == null

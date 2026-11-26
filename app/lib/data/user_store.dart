@@ -347,6 +347,14 @@ class UserStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Afficher aussi les expressions vulgaires (masquées par défaut).
+  bool get afficherVulgaire => _prefs.getBool('afficherVulgaire') ?? false;
+
+  Future<void> setAfficherVulgaire(bool valeur) async {
+    await _prefs.setBool('afficherVulgaire', valeur);
+    notifyListeners();
+  }
+
   bool get tutorielVu => _prefs.getBool('tutorielVu') ?? false;
 
   Future<void> setTutorielVu() async {

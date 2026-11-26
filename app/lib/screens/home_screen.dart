@@ -9,6 +9,7 @@ import '../data/mots_du_jour.dart';
 import '../data/user_store.dart';
 import 'definition_screen.dart';
 import 'entry_screen.dart';
+import 'expressions_screen.dart';
 import 'favorites_screen.dart';
 import 'index_screen.dart';
 import 'motif_screen.dart';
@@ -33,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _focus = FocusNode();
   final _defilement = ScrollController();
   Timer? _delai;
+  Future<LigneExpression?>? _expressionDuJour;
   List<String> _suggestions = const [];
 
   @override
@@ -277,6 +279,46 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             );
           }),
+          const SizedBox(height: 16),
+          FutureBuilder<LigneExpression?>(
+            future: _expressionDuJour ??= AppScope.of(context)
+                .moteur
+                .expressionDuJour(DateTime.now().difference(DateTime(2026)).inDays),
+            builder: (context, snap) {
+              final e = snap.data;
+              if (e == null) return const SizedBox.shrink();
+              return Semantics(
+                button: true,
+                label: 'Expression du jour : ${e.mot.mot}, ${e.fr}',
+                excludeSemantics: true,
+                child: Card(
+                  margin: EdgeInsets.zero,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => _ouvrir(EntryScreen(mot: e.mot)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Expression du jour', style: theme.textTheme.titleSmall),
+                          const SizedBox(height: 6),
+                          Text(e.mot.mot,
+                              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 2),
+                          Text(e.fr, style: theme.textTheme.bodyLarge),
+                          if (e.litteral.isNotEmpty)
+                            Text('Mot à mot : ${e.litteral}',
+                                style: theme.textTheme.bodyMedium
+                                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
           const SizedBox(height: 28),
           Text('Outils', style: theme.textTheme.titleLarge),
           const SizedBox(height: 12),
@@ -284,6 +326,8 @@ class _HomeScreenState extends State<HomeScreen> {
             spacing: 12,
             runSpacing: 12,
             children: [
+              _outil(theme, Icons.format_quote_rounded, 'Expressions',
+                  () => _ouvrir(const ExpressionsScreen())),
               _outil(theme, Icons.grid_view_rounded, 'Recherche par motif', _rechercheParMotif),
               _outil(theme, Icons.shuffle_rounded, 'Mot au hasard', _motAuHasard),
               _outil(theme, Icons.edit_note_rounded, 'Mes notes', () => _ouvrir(const NotesScreen())),

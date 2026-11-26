@@ -42,6 +42,15 @@ class SourceSql implements Source {
         source: _texte(ligne['source']),
       );
 
+  static LigneExpression _ligneExpression(Map<String, Object?> l) => LigneExpression(
+        mot: _mot(l),
+        type: _texte(l['type']),
+        registre: _texte(l['registre']),
+        litteral: _texte(l['litteral']),
+        curee: _entier(l['curee']) == 1,
+        fr: _texte(l['fr']),
+      );
+
   /// Borne supérieure (exclue) d'un parcours par préfixe.
   static String borneSuperieure(String prefixe) => '$prefixe￿';
 
@@ -166,6 +175,58 @@ class SourceSql implements Source {
     return lignes
         .map((l) => FauxAmi(mot: _texte(l['mot']), piege: _texte(l['piege']), vrai: _texte(l['vrai'])))
         .toList();
+  }
+
+  @override
+  Future<InfoExpression?> infoExpression(int motId) async {
+    final lignes = await _sql.requete(requeteInfoExpression, [motId]);
+    if (lignes.isEmpty) return null;
+    final l = lignes.first;
+    return InfoExpression(
+      type: _texte(l['type']),
+      registre: _texte(l['registre']),
+      litteral: _texte(l['litteral']),
+      fr: _texte(l['fr']),
+      theme: _texte(l['theme']),
+      exemple: _texte(l['exemple']),
+      curee: _entier(l['curee']) == 1,
+    );
+  }
+
+  @override
+  Future<List<LigneExpression>> expressions(
+      {String type = '', String theme = '', bool vulgaire = false, String recherche = '',
+      required int limite, int decalage = 0}) async {
+    final motif = recherche.trim();
+    final like = '%$motif%';
+    final lignes = await _sql.requete(requeteExpressions,
+        [type, type, theme, theme, vulgaire ? 1 : 0, motif, like, like, limite, decalage]);
+    return lignes.map(_ligneExpression).toList();
+  }
+
+  @override
+  Future<List<LigneExpression>> expressionsAvec(String motPlie,
+      {bool vulgaire = false, required int limite}) async {
+    final lignes = await _sql.requete(requeteExpressionsAvec, [motPlie, motPlie, vulgaire ? 1 : 0, limite]);
+    return lignes.map(_ligneExpression).toList();
+  }
+
+  @override
+  Future<int> nombreExpressionsCurees() async {
+    final lignes = await _sql.requete(requeteNombreExpressionsCurees);
+    return lignes.isEmpty ? 0 : _entier(lignes.first['n']);
+  }
+
+  @override
+  Future<LigneExpression?> expressionCuree(int decalage) async {
+    final lignes = await _sql.requete(requeteExpressionCuree, [decalage]);
+    return lignes.isEmpty ? null : _ligneExpression(lignes.first);
+  }
+
+  @override
+  Future<List<LigneExpression>> expressionsCureesHasard(int nombre) async {
+    final lignes = await _sql.requete(requeteExpressionsCureesHasard, [nombre]);
+    return lignes.map(_ligneExpression).toList();
   }
 
   @override

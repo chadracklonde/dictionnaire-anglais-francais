@@ -88,8 +88,13 @@ jobs:
             exit 1
           fi
 
+      # Listes de titres (idiomes, proverbes, argot, vulgaire…) du Wiktionnaire : un échec n'arrête rien,
+      # la base est alors classée avec les seules natures (phrase, proverbe…) et les listes écrites à la main.
+      - name: Catégories du Wiktionnaire (expressions)
+        run: python3 -I tools/categories_wiktionnaire.py --sortie categories || true
+
       - name: Finaliser (contractions, rangs, élagage, index)
-        run: python3 -I tools/construire_base.py finaliser --db base.db --frequence frequence.txt --seuil-rang "$SEUIL_RANG"
+        run: python3 -I tools/construire_base.py finaliser --db base.db --frequence frequence.txt --seuil-rang "$SEUIL_RANG" --categories categories
 
       # Sans --strict : le rapport est toujours publié, l'étape suivante échoue s'il est bloquant.
       - name: Rapport de qualité

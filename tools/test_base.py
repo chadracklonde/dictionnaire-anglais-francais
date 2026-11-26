@@ -36,7 +36,7 @@ class Base(unittest.TestCase):
         cls.c_fr = b.lire(conn, lines("sample_base_fr.jsonl"), "fr")
         cls.avant = {t: conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]
                      for t in ("mots", "traductions")}
-        cls.fin = b.finaliser(conn, cls.freq, seuil_rang=8)
+        cls.fin = b.finaliser(conn, cls.freq, seuil_rang=8, expressions=None)
         conn.close()
         cls.conn = sqlite3.connect(cls.db)
 

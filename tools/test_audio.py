@@ -48,7 +48,7 @@ class Audio(unittest.TestCase):
         for ed, n in (("en", "sample_base_en.jsonl"), ("fr", "sample_base_fr.jsonl")):
             with open(os.path.join(HERE, n), "rb") as f:
                 b.lire(conn, f.readlines(), ed)
-        b.finaliser(conn, freq, seuil_rang=8)
+        b.finaliser(conn, freq, seuil_rang=8, expressions=None)
         conn.close()
 
     @classmethod
